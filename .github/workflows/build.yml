@@ -29,62 +29,68 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Install Pillow (Image Generator)
+      - name: Install Pillow
         run: pip install pillow
 
-      - name: Auto-Generate App Assets (1024x1024)
+      - name: Initialize Web Directory
         run: |
-          python3 - << 'EOF'
-          import os
-          from PIL import Image, ImageDraw, ImageFont
-
-          os.makedirs('assets', exist_ok=True)
-          size = (1024, 1024)
-          img = Image.new('RGBA', size, (18, 18, 29, 255))
-          draw = ImageDraw.Draw(img)
-
-          # Background circular badge
-          margin = 80
-          draw.rounded_rectangle([margin, margin, 1024-margin, 1024-margin], radius=220, fill=(33, 33, 54, 255))
-
-          # Connected decorative bubbles
-          colors = [(59, 130, 246), (16, 185, 129), (249, 115, 22), (236, 72, 153)]
-          points = [(350, 420), (674, 420), (350, 650), (674, 650)]
-          
-          # Lines
-          draw.line([points[0], points[1], points[3], points[2]], fill=(255, 255, 255, 180), width=45)
-
-          # Nodes
-          for pt, clr in zip(points, colors):
-              r = 95
-              draw.ellipse([pt[0]-r, pt[1]-r, pt[0]+r, pt[1]+r], fill=clr)
-              draw.ellipse([pt[0]-r, pt[1]-r, pt[0]+r, pt[1]+r], outline=(255, 255, 255, 255), width=10)
-
-          img.save('assets/icon.png')
-          img.save('assets/icon-only.png')
-          img.save('assets/icon-foreground.png')
-          
-          # Splash Screen
-          splash = Image.new('RGBA', (2732, 2732), (13, 13, 21, 255))
-          splash_draw = ImageDraw.Draw(splash)
-          splash.paste(img.resize((600, 600)), (1066, 1066), img.resize((600, 600)))
-          splash.save('assets/splash.png')
-          print("Assets successfully generated!")
-          EOF
+          mkdir -p www
+          cp index.html www/
 
       - name: Initialize Capacitor App
         run: |
           npm init -y
           npm install @capacitor/core @capacitor/cli @capacitor/android
-          npm install -D @capacitor/assets
-          npx cap init "Loop Merge 2048" "com.games.loop2048" --web-dir "."
+          npx cap init "Loop Merge 2048" "com.games.loop2048" --web-dir "www"
           npx cap add android
 
-      - name: Generate Android App Icons
+      - name: Auto-Generate Android Icons (Direct to Res)
         run: |
-          npx @capacitor/assets generate --android
+          python3 - << 'EOF'
+          import os
+          from PIL import Image, ImageDraw
 
-      - name: Sync Web Assets to Android
+          # Base High-Res Icon
+          size = (512, 512)
+          img = Image.new('RGBA', size, (18, 18, 29, 255))
+          draw = ImageDraw.Draw(img)
+
+          # Background Badge
+          margin = 40
+          draw.rounded_rectangle([margin, margin, 512-margin, 512-margin], radius=110, fill=(33, 33, 54, 255))
+
+          # Connected Nodes Art
+          colors = [(59, 130, 246), (16, 185, 129), (249, 115, 22), (236, 72, 153)]
+          points = [(175, 210), (337, 210), (175, 325), (337, 325)]
+
+          draw.line([points[0], points[1], points[3], points[2]], fill=(255, 255, 255, 180), width=22)
+
+          for pt, clr in zip(points, colors):
+              r = 48
+              draw.ellipse([pt[0]-r, pt[1]-r, pt[0]+r, pt[1]+r], fill=clr)
+              draw.ellipse([pt[0]-r, pt[1]-r, pt[0]+r, pt[1]+r], outline=(255, 255, 255, 255), width=5)
+
+          # Android Standard Sizes
+          densities = {
+              'mipmap-mdpi': 48,
+              'mipmap-hdpi': 72,
+              'mipmap-xhdpi': 96,
+              'mipmap-xxhdpi': 144,
+              'mipmap-xxxhdpi': 192
+          }
+
+          base_res = "android/app/src/main/res"
+          for folder, px in densities.items():
+              out_dir = os.path.join(base_res, folder)
+              os.makedirs(out_dir, exist_ok=True)
+              resized = img.resize((px, px), Image.Resampling.LANCZOS)
+              resized.save(os.path.join(out_dir, 'ic_launcher.png'))
+              resized.save(os.path.join(out_dir, 'ic_launcher_round.png'))
+
+          print("All Android app icons generated and placed successfully.")
+          EOF
+
+      - name: Sync Android Project
         run: |
           npx cap sync android
 
@@ -92,7 +98,7 @@ jobs:
         run: |
           cd android
           chmod +x ./gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleDebug --no-daemon
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
