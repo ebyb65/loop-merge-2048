@@ -24,6 +24,9 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
@@ -37,10 +40,10 @@ jobs:
           mkdir -p www
           cp index.html www/
 
-      - name: Initialize Capacitor App
+      - name: Initialize Capacitor Project
         run: |
           npm init -y
-          npm install @capacitor/core @capacitor/cli @capacitor/android
+          npm install @capacitor/core@latest @capacitor/cli@latest @capacitor/android@latest
           npx cap init "Loop Merge 2048" "com.games.loop2048" --web-dir "www"
           npx cap add android
 
@@ -50,19 +53,15 @@ jobs:
           import os
           from PIL import Image, ImageDraw
 
-          # Base High-Res Icon
           size = (512, 512)
           img = Image.new('RGBA', size, (18, 18, 29, 255))
           draw = ImageDraw.Draw(img)
 
-          # Background Badge
           margin = 40
           draw.rounded_rectangle([margin, margin, 512-margin, 512-margin], radius=110, fill=(33, 33, 54, 255))
 
-          # Connected Nodes Art
           colors = [(59, 130, 246), (16, 185, 129), (249, 115, 22), (236, 72, 153)]
           points = [(175, 210), (337, 210), (175, 325), (337, 325)]
-
           draw.line([points[0], points[1], points[3], points[2]], fill=(255, 255, 255, 180), width=22)
 
           for pt, clr in zip(points, colors):
@@ -70,7 +69,6 @@ jobs:
               draw.ellipse([pt[0]-r, pt[1]-r, pt[0]+r, pt[1]+r], fill=clr)
               draw.ellipse([pt[0]-r, pt[1]-r, pt[0]+r, pt[1]+r], outline=(255, 255, 255, 255), width=5)
 
-          # Android Standard Sizes
           densities = {
               'mipmap-mdpi': 48,
               'mipmap-hdpi': 72,
@@ -86,19 +84,23 @@ jobs:
               resized = img.resize((px, px), Image.Resampling.LANCZOS)
               resized.save(os.path.join(out_dir, 'ic_launcher.png'))
               resized.save(os.path.join(out_dir, 'ic_launcher_round.png'))
-
-          print("All Android app icons generated and placed successfully.")
+          print("Icons created successfully.")
           EOF
 
-      - name: Sync Android Project
+      - name: Configure Android SDK & Licenses
+        run: |
+          echo "sdk.dir=$ANDROID_HOME" > android/local.properties
+          yes | sdkmanager --licenses || true
+
+      - name: Sync Android
         run: |
           npx cap sync android
 
-      - name: Build Android Debug APK
+      - name: Build Debug APK with Gradle
         run: |
           cd android
           chmod +x ./gradlew
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleDebug --stacktrace --no-daemon
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
