@@ -1,0 +1,102 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Java JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install Pillow (Image Generator)
+        run: pip install pillow
+
+      - name: Auto-Generate App Assets (1024x1024)
+        run: |
+          python3 - << 'EOF'
+          import os
+          from PIL import Image, ImageDraw, ImageFont
+
+          os.makedirs('assets', exist_ok=True)
+          size = (1024, 1024)
+          img = Image.new('RGBA', size, (18, 18, 29, 255))
+          draw = ImageDraw.Draw(img)
+
+          # Background circular badge
+          margin = 80
+          draw.rounded_rectangle([margin, margin, 1024-margin, 1024-margin], radius=220, fill=(33, 33, 54, 255))
+
+          # Connected decorative bubbles
+          colors = [(59, 130, 246), (16, 185, 129), (249, 115, 22), (236, 72, 153)]
+          points = [(350, 420), (674, 420), (350, 650), (674, 650)]
+          
+          # Lines
+          draw.line([points[0], points[1], points[3], points[2]], fill=(255, 255, 255, 180), width=45)
+
+          # Nodes
+          for pt, clr in zip(points, colors):
+              r = 95
+              draw.ellipse([pt[0]-r, pt[1]-r, pt[0]+r, pt[1]+r], fill=clr)
+              draw.ellipse([pt[0]-r, pt[1]-r, pt[0]+r, pt[1]+r], outline=(255, 255, 255, 255), width=10)
+
+          img.save('assets/icon.png')
+          img.save('assets/icon-only.png')
+          img.save('assets/icon-foreground.png')
+          
+          # Splash Screen
+          splash = Image.new('RGBA', (2732, 2732), (13, 13, 21, 255))
+          splash_draw = ImageDraw.Draw(splash)
+          splash.paste(img.resize((600, 600)), (1066, 1066), img.resize((600, 600)))
+          splash.save('assets/splash.png')
+          print("Assets successfully generated!")
+          EOF
+
+      - name: Initialize Capacitor App
+        run: |
+          npm init -y
+          npm install @capacitor/core @capacitor/cli @capacitor/android
+          npm install -D @capacitor/assets
+          npx cap init "Loop Merge 2048" "com.games.loop2048" --web-dir "."
+          npx cap add android
+
+      - name: Generate Android App Icons
+        run: |
+          npx @capacitor/assets generate --android
+
+      - name: Sync Web Assets to Android
+        run: |
+          npx cap sync android
+
+      - name: Build Android Debug APK
+        run: |
+          cd android
+          chmod +x ./gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: LoopMerge2048-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 14
