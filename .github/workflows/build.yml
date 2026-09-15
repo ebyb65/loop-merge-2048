@@ -38,12 +38,31 @@ jobs:
           mkdir -p www
           cp index.html www/
 
-      - name: Initialize Capacitor App
+      - name: Initialize Capacitor App & AdMob Plugin
         run: |
           npm init -y
-          npm install @capacitor/core @capacitor/cli @capacitor/android
+          npm install @capacitor/core @capacitor/cli @capacitor/android @capacitor-community/admob
           npx cap init "Drop 2048" "com.games.drop2048" --web-dir "www"
           npx cap add android
+
+      - name: Inject AdMob App ID into AndroidManifest.xml
+        run: |
+          python3 - << 'EOF'
+          manifest_path = "android/app/src/main/AndroidManifest.xml"
+          with open(manifest_path, 'r') as f:
+              content = f.read()
+
+          admob_meta = """
+                  <meta-data
+                      android:name="com.google.android.gms.ads.APPLICATION_ID"
+                      android:value="ca-app-pub-3940256099942544~3347511713"/>
+          """
+          if "APPLICATION_ID" not in content:
+              content = content.replace("</application>", f"{admob_meta}\n    </application>")
+              with open(manifest_path, 'w') as f:
+                  f.write(content)
+              print("AdMob ID injected into manifest.")
+          EOF
 
       - name: Generate Minimal Light App Icons
         run: |
@@ -55,14 +74,9 @@ jobs:
           img = Image.new('RGBA', size, (248, 250, 252, 255))
           draw = ImageDraw.Draw(img)
 
-          # Card container
           draw.rounded_rectangle([30, 30, 482, 482], radius=110, fill=(255, 255, 255, 255), outline=(79, 70, 229, 255), width=8)
-
-          # Dropping top block (Amber)
           draw.rounded_rectangle([186, 75, 326, 215], radius=28, fill=(245, 158, 11, 255))
           draw.polygon([(256, 240), (236, 220), (276, 220)], fill=(79, 70, 229, 230))
-
-          # Merging bottom block (Indigo / 2048)
           draw.rounded_rectangle([136, 250, 376, 430], radius=40, fill=(79, 70, 229, 255))
 
           densities = {
@@ -106,6 +120,6 @@ jobs:
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Drop2048-Zen-APK
+          name: Drop2048-Monetized-APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 14
