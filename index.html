@@ -24,7 +24,6 @@
     }
     body {
       background: linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
-      /* Minimalist geometric SVG grid backdrop */
       background-image: 
         radial-gradient(at 10% 10%, rgba(224, 231, 255, 0.6) 0px, transparent 50%),
         radial-gradient(at 90% 90%, rgba(254, 226, 226, 0.5) 0px, transparent 50%),
@@ -41,7 +40,6 @@
       justify-content: center;
     }
 
-    /* SCREEN MANAGEMENT */
     .screen {
       position: absolute;
       inset: 0;
@@ -272,7 +270,7 @@
     }
     @keyframes mergeFlash {
       0% { transform: scale(1); }
-      50% { transform: scale(1.22); filter: brightness(1.2); }
+      50% { transform: scale(1.25); filter: brightness(1.2); }
       100% { transform: scale(1); }
     }
 
@@ -364,8 +362,8 @@
       <h2 style="font-size:22px; margin-bottom:12px; color:#0f172a;">How to Play</h2>
       <p style="font-size:13px; color:#64748b; text-align:left; line-height:1.6; margin-bottom:20px;">
         1. <b>Tap any column:</b> The top number tile drops into that track.<br><br>
-        2. <b>Match & Merge:</b> Identical numbers colliding vertically merge into their sum (2+2=4, 4+4=8).<br><br>
-        3. <b>Keep Space:</b> Avoid letting any column stack to the top!
+        2. <b>Vertical & Horizontal Merges:</b> When matching numbers touch vertically or horizontally side-by-side, they merge together into their sum (2+2=4, 32+32=64).<br><br>
+        3. <b>Keep Space:</b> Don't let columns fill to the top!
       </p>
       <button class="btn btn-main" id="close-rules-btn">Got It!</button>
     </div>
@@ -396,22 +394,20 @@
   </div>
 
   <script>
-    // --- SOPHISTICATED COLOR PALETTE ---
     const PALETTE = {
-      2:    { bg: '#3b82f6', text: '#ffffff' }, // Cobalt Blue
-      4:    { bg: '#06b6d4', text: '#ffffff' }, // Cyan
-      8:    { bg: '#10b981', text: '#ffffff' }, // Emerald
-      16:   { bg: '#f59e0b', text: '#ffffff' }, // Amber
-      32:   { bg: '#f97316', text: '#ffffff' }, // Orange
-      64:   { bg: '#ef4444', text: '#ffffff' }, // Coral
-      128:  { bg: '#ec4899', text: '#ffffff' }, // Pink
-      256:  { bg: '#8b5cf6', text: '#ffffff' }, // Violet
-      512:  { bg: '#6366f1', text: '#ffffff' }, // Indigo
-      1024: { bg: '#14b8a6', text: '#ffffff' }, // Teal
-      2048: { bg: '#e11d48', text: '#ffffff' }  // Crimson
+      2:    { bg: '#3b82f6', text: '#ffffff' },
+      4:    { bg: '#06b6d4', text: '#ffffff' },
+      8:    { bg: '#10b981', text: '#ffffff' },
+      16:   { bg: '#f59e0b', text: '#ffffff' },
+      32:   { bg: '#f97316', text: '#ffffff' },
+      64:   { bg: '#ef4444', text: '#ffffff' },
+      128:  { bg: '#ec4899', text: '#ffffff' },
+      256:  { bg: '#8b5cf6', text: '#ffffff' },
+      512:  { bg: '#6366f1', text: '#ffffff' },
+      1024: { bg: '#14b8a6', text: '#ffffff' },
+      2048: { bg: '#e11d48', text: '#ffffff' }
     };
 
-    // --- SOUND SYNTHESIZER ---
     const Sound = {
       ctx: null,
       muted: false,
@@ -458,10 +454,10 @@
       }
     };
 
-    // --- GAME ENGINE ---
     const COLS = 5;
     const ROWS = 7;
-    let grid = Array.from({ length: COLS }, () => []);
+    // 2D grid: grid[r][c], r = 0 (top) to 6 (bottom)
+    let board = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
     let score = 0;
     let highScore = parseInt(localStorage.getItem('drop2048_hi') || '0', 10);
     let nextValue = 2;
@@ -475,19 +471,20 @@
 
     bestText.innerText = highScore;
 
-    function renderSlots() {
+    function renderBoard(mergedCell = null) {
       columns.forEach((colEl, c) => {
         colEl.innerHTML = '';
         for (let r = 0; r < ROWS; r++) {
           const slot = document.createElement('div');
           slot.className = 'cell-slot';
 
-          const tileIdx = (ROWS - 1) - r;
-          const val = grid[c][tileIdx];
-
-          if (val) {
+          const val = board[r][c];
+          if (val > 0) {
             const tile = document.createElement('div');
             tile.className = 'tile';
+            if (mergedCell && mergedCell.r === r && mergedCell.c === c) {
+              tile.classList.add('merged');
+            }
             tile.innerText = val;
             const colors = PALETTE[val] || PALETTE[2];
             tile.style.backgroundColor = colors.bg;
@@ -500,17 +497,17 @@
     }
 
     function initGame() {
-      grid = Array.from({ length: COLS }, () => []);
+      board = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
       score = 0;
       scoreText.innerText = '0';
       isProcessing = false;
       rollNextValue();
-      renderSlots();
+      renderBoard();
     }
 
     function rollNextValue() {
       const candidates = [2, 4, 8, 16, 32, 64];
-      const maxVal = Math.max(2, ...grid.flat());
+      const maxVal = Math.max(2, ...board.flat());
       const choices = candidates.filter(v => v <= Math.max(16, maxVal / 2));
       nextValue = choices[Math.floor(Math.random() * choices.length)];
 
@@ -522,61 +519,119 @@
 
     function dropIntoColumn(col) {
       if (isProcessing) return;
-      if (grid[col].length >= ROWS) return;
 
-      isProcessing = true;
-      Sound.drop();
-
-      grid[col].push(nextValue);
-      renderSlots();
-      rollNextValue();
-
-      setTimeout(() => {
-        resolveColumn(col, () => {
-          isProcessing = false;
-          checkGameOver();
-        });
-      }, 100);
-    }
-
-    function resolveColumn(col, callback) {
-      const arr = grid[col];
-      let didMerge = false;
-
-      for (let i = 0; i < arr.length - 1; i++) {
-        if (arr[i] === arr[i + 1]) {
-          const mergedVal = arr[i] * 2;
-          arr[i] = mergedVal;
-          arr.splice(i + 1, 1);
-          didMerge = true;
-
-          score += mergedVal;
-          scoreText.innerText = score;
-          if (score > highScore) {
-            highScore = score;
-            localStorage.setItem('drop2048_hi', highScore);
-            bestText.innerText = highScore;
-          }
-
-          Sound.merge(mergedVal);
+      // Find lowest empty row in this column
+      let targetRow = -1;
+      for (let r = ROWS - 1; r >= 0; r--) {
+        if (board[r][col] === 0) {
+          targetRow = r;
           break;
         }
       }
 
-      if (didMerge) {
-        renderSlots();
-        setTimeout(() => resolveColumn(col, callback), 140);
+      if (targetRow === -1) return; // Column full
+
+      isProcessing = true;
+      Sound.drop();
+
+      board[targetRow][col] = nextValue;
+      renderBoard();
+      rollNextValue();
+
+      setTimeout(() => {
+        resolveFullBoard(targetRow, col, () => {
+          isProcessing = false;
+          checkGameOver();
+        });
+      }, 120);
+    }
+
+    // Comprehensive 2D Resolution: Vertical + Horizontal + Gravity
+    function resolveFullBoard(lastR, lastC, callback) {
+      let didMerge = false;
+      let targetMergeCell = null;
+
+      // 1. Check Vertical Merge (Bottom match)
+      for (let r = ROWS - 2; r >= 0; r--) {
+        for (let c = 0; c < COLS; c++) {
+          if (board[r][c] > 0 && board[r][c] === board[r + 1][c]) {
+            const newVal = board[r][c] * 2;
+            board[r + 1][c] = newVal;
+            board[r][c] = 0;
+            didMerge = true;
+            targetMergeCell = { r: r + 1, c: c };
+            triggerScore(newVal);
+            break;
+          }
+        }
+        if (didMerge) break;
+      }
+
+      // 2. Check Horizontal Merge (Left/Right match) if no vertical merge occurred
+      if (!didMerge) {
+        for (let r = ROWS - 1; r >= 0; r--) {
+          for (let c = 0; c < COLS - 1; c++) {
+            if (board[r][c] > 0 && board[r][c] === board[r][c + 1]) {
+              const newVal = board[r][c] * 2;
+              // Merge into the tile closer to the last interaction, or the right one
+              const targetCol = (c === lastC) ? c : c + 1;
+              const sourceCol = (targetCol === c) ? c + 1 : c;
+
+              board[r][targetCol] = newVal;
+              board[r][sourceCol] = 0;
+              didMerge = true;
+              targetMergeCell = { r: r, c: targetCol };
+              triggerScore(newVal);
+              break;
+            }
+          }
+          if (didMerge) break;
+        }
+      }
+
+      // 3. Apply Gravity downward to any floating blocks
+      let didDrop = false;
+      for (let c = 0; c < COLS; c++) {
+        for (let r = ROWS - 1; r > 0; r--) {
+          if (board[r][c] === 0) {
+            // Find tile above to pull down
+            for (let k = r - 1; k >= 0; k--) {
+              if (board[k][c] > 0) {
+                board[r][c] = board[k][c];
+                board[k][c] = 0;
+                didDrop = true;
+                break;
+              }
+            }
+          }
+        }
+      }
+
+      if (didMerge || didDrop) {
+        renderBoard(targetMergeCell);
+        setTimeout(() => resolveFullBoard(targetMergeCell ? targetMergeCell.r : lastR, targetMergeCell ? targetMergeCell.c : lastC, callback), 140);
       } else {
         callback();
       }
     }
 
-    function checkGameOver() {
-      let fullCols = 0;
-      for (let c = 0; c < COLS; c++) {
-        if (grid[c].length >= ROWS) fullCols++;
+    function triggerScore(newVal) {
+      score += newVal;
+      scoreText.innerText = score;
+      if (score > highScore) {
+        highScore = score;
+        localStorage.setItem('drop2048_hi', highScore);
+        bestText.innerText = highScore;
       }
-      if (fullCols === COLS) {
+      Sound.merge(newVal);
+    }
+
+    function checkGameOver() {
+      let isFull = true;
+      for (let c = 0; c < COLS; c++) {
+        if (board[0][c] === 0) isFull = false;
+      }
+      if (isFull) {
         document.getElementById('over-modal').classList.add('active');
       }
     }
@@ -608,7 +663,6 @@
       document.getElementById(id).classList.add('active');
     }
 
-    // UI BUTTONS
     document.getElementById('start-btn').onclick = () => {
       Sound.init();
       showScreen('game-screen');
