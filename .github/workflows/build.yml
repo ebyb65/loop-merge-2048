@@ -32,8 +32,9 @@ jobs:
       - name: Install Pillow
         run: pip install pillow
 
-      - name: Prepare Web Assets
+      - name: Prepare Clean Web Assets
         run: |
+          rm -rf www
           mkdir -p www
           cp index.html www/
 
@@ -44,30 +45,25 @@ jobs:
           npx cap init "Drop 2048" "com.games.drop2048" --web-dir "www"
           npx cap add android
 
-      - name: Generate Custom 2048 App Icons
+      - name: Generate Minimal Light App Icons
         run: |
           python3 - << 'EOF'
           import os
           from PIL import Image, ImageDraw
 
-          # Create high-res 512x512 icon
           size = (512, 512)
-          img = Image.new('RGBA', size, (15, 16, 22, 255))
+          img = Image.new('RGBA', size, (248, 250, 252, 255))
           draw = ImageDraw.Draw(img)
 
-          # Outer card container
-          draw.rounded_rectangle([30, 30, 482, 482], radius=110, fill=(28, 29, 41, 255), outline=(255, 71, 87, 255), width=8)
+          # Card container
+          draw.rounded_rectangle([30, 30, 482, 482], radius=110, fill=(255, 255, 255, 255), outline=(79, 70, 229, 255), width=8)
 
-          # Dropping top block (64 - orange)
-          draw.rounded_rectangle([186, 75, 326, 215], radius=28, fill=(249, 115, 22, 255))
-          draw.polygon([(256, 240), (236, 220), (276, 220)], fill=(255, 255, 255, 230))
+          # Dropping top block (Amber)
+          draw.rounded_rectangle([186, 75, 326, 215], radius=28, fill=(245, 158, 11, 255))
+          draw.polygon([(256, 240), (236, 220), (276, 220)], fill=(79, 70, 229, 230))
 
-          # Merging bottom block (2048 - coral red)
-          draw.rounded_rectangle([136, 250, 376, 430], radius=40, fill=(255, 71, 87, 255))
-
-          # Center white highlight
-          draw.rounded_rectangle([166, 290, 346, 390], radius=20, fill=(255, 255, 255, 255))
-          draw.rounded_rectangle([174, 298, 338, 382], radius=16, fill=(20, 20, 30, 255))
+          # Merging bottom block (Indigo / 2048)
+          draw.rounded_rectangle([136, 250, 376, 430], radius=40, fill=(79, 70, 229, 255))
 
           densities = {
               'mipmap-mdpi': 48,
@@ -78,8 +74,6 @@ jobs:
           }
 
           base_res = "android/app/src/main/res"
-
-          # Write clean PNG icons into every Android mipmap folder
           for folder, px in densities.items():
               target_dir = os.path.join(base_res, folder)
               os.makedirs(target_dir, exist_ok=True)
@@ -88,33 +82,30 @@ jobs:
               resized.save(os.path.join(target_dir, 'ic_launcher_round.png'))
               resized.save(os.path.join(target_dir, 'ic_launcher_foreground.png'))
 
-              # Remove conflicting XML files safely if they exist
               for xml_name in ['ic_launcher.xml', 'ic_launcher_round.xml']:
                   xml_path = os.path.join(target_dir, xml_name)
                   if os.path.exists(xml_path):
                       os.remove(xml_path)
-
-          print("Launcher icons generated successfully.")
           EOF
 
-      - name: Sync Web Assets to Native
+      - name: Force Clean Sync Web Assets
         run: |
-          npx cap sync android
+          npx cap sync android --inline
 
       - name: Accept SDK Licenses & Link Path
         run: |
           echo "sdk.dir=$ANDROID_HOME" > android/local.properties
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
-      - name: Build Debug APK
+      - name: Build Clean Debug APK
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew clean assembleDebug --no-daemon
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Drop2048-APK
+          name: Drop2048-Zen-APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 14
