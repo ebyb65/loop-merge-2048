@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Drop Merge 2048</title>
+  <title>Drop 2048: Minimal</title>
   <style>
     :root {
-      --bg: #0f1016;
-      --card-bg: #1c1d27;
-      --primary: #ff5252;
-      --accent: #4ade80;
+      --bg: #0d0f14;
+      --panel: #161922;
+      --border: rgba(255, 255, 255, 0.08);
+      --accent: #ff4757;
     }
     * {
       box-sizing: border-box;
@@ -17,12 +17,12 @@
       padding: 0;
       user-select: none;
       -webkit-user-select: none;
-      touch-action: manipulation;
+      touch-action: none;
     }
     body {
-      background: radial-gradient(circle at center, #1b1c28, var(--bg));
-      color: #fff;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg);
+      color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       overflow: hidden;
       display: flex;
       flex-direction: column;
@@ -32,22 +32,18 @@
       width: 100vw;
     }
 
-    /* SCREENS CONTAINER */
     .screen {
       position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      inset: 0;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: space-between;
       padding: env(safe-area-inset-top, 24px) 20px env(safe-area-inset-bottom, 24px) 20px;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: opacity 0.25s ease, transform 0.25s ease;
       opacity: 0;
       pointer-events: none;
-      transform: scale(0.96);
+      transform: scale(0.97);
     }
     .screen.active {
       opacity: 1;
@@ -56,146 +52,160 @@
     }
 
     /* HOME SCREEN */
-    .brand-box {
+    .hero-area {
       text-align: center;
-      margin-top: 15vh;
+      margin-top: 14vh;
     }
-    .logo-badge {
+    .hero-badge {
       display: inline-block;
-      padding: 6px 14px;
-      background: rgba(255, 255, 255, 0.08);
-      border-radius: 20px;
       font-size: 11px;
-      letter-spacing: 2px;
       font-weight: 700;
-      color: #ff9800;
-      margin-bottom: 12px;
-      border: 1px solid rgba(255, 152, 0, 0.3);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: rgba(255, 71, 87, 0.12);
+      color: #ff6b81;
+      border: 1px solid rgba(255, 71, 87, 0.3);
+      margin-bottom: 16px;
     }
-    .brand-box h1 {
-      font-size: 42px;
+    .hero-title {
+      font-size: 46px;
       font-weight: 900;
-      letter-spacing: 1px;
-      line-height: 1.1;
-      background: linear-gradient(135deg, #ff7675, #fab1a0, #ffeaa7);
+      letter-spacing: -1px;
+      line-height: 1;
+      background: linear-gradient(180deg, #ffffff 30%, #94a3b8 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
+    .hero-sub {
+      color: #64748b;
+      font-size: 13px;
+      margin-top: 10px;
+      font-weight: 500;
+    }
+
     .menu-group {
       width: 100%;
-      max-width: 290px;
+      max-width: 300px;
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 12px;
       margin-bottom: 8vh;
     }
     .btn {
       width: 100%;
       padding: 16px;
-      border-radius: 16px;
-      font-size: 16px;
-      font-weight: 800;
+      border-radius: 18px;
+      font-size: 15px;
+      font-weight: 700;
       border: none;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 10px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-      transition: transform 0.1s ease;
+      gap: 8px;
+      transition: transform 0.1s ease, filter 0.1s ease;
     }
     .btn:active {
       transform: scale(0.97);
     }
-    .btn-play {
-      background: linear-gradient(135deg, #ff4757, #ff6b81);
-      color: #fff;
+    .btn-primary {
+      background: #ff4757;
+      color: #ffffff;
+      box-shadow: 0 10px 25px rgba(255, 71, 87, 0.35);
     }
-    .btn-secondary {
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      color: #eaeaea;
+    .btn-outline {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: #cbd5e1;
     }
 
-    /* GAME SCREEN */
+    /* GAME HEADER */
     header {
       width: 100%;
       max-width: 380px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-top: 6px;
+      margin-top: 4px;
     }
-    .stat-pill {
-      background: rgba(255, 255, 255, 0.07);
+    .stats-wrap {
+      display: flex;
+      gap: 8px;
+    }
+    .stat-box {
+      background: var(--panel);
+      border: 1px solid var(--border);
       padding: 6px 14px;
-      border-radius: 12px;
+      border-radius: 14px;
+      min-width: 76px;
       text-align: center;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      min-width: 70px;
     }
-    .stat-pill span {
+    .stat-label {
       font-size: 9px;
       text-transform: uppercase;
-      color: #a0a3bd;
-      display: block;
       font-weight: 700;
+      letter-spacing: 1px;
+      color: #64748b;
     }
-    .stat-pill b {
-      font-size: 16px;
+    .stat-val {
+      font-size: 17px;
       font-weight: 800;
+      color: #f1f5f9;
     }
-    .btn-icon {
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      width: 40px;
-      height: 40px;
-      border-radius: 12px;
-      color: #fff;
-      font-size: 16px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    /* DROPPER AREA */
-    #dropper-lane {
-      width: 100%;
-      max-width: 360px;
-      height: 60px;
-      display: flex;
-      align-items: center;
-      position: relative;
-      margin-top: 10px;
-    }
-    #next-block {
-      position: absolute;
-      width: 60px;
-      height: 60px;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 900;
+    .icon-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: #cbd5e1;
       font-size: 18px;
-      color: #fff;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-      transition: left 0.12s ease-out;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
     }
 
-    /* BOARD CANVAS */
-    #board-wrapper {
+    /* DROPPER STAGING AREA */
+    #dropper-container {
+      width: 100%;
+      max-width: 360px;
+      height: 70px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      margin: 10px 0 6px 0;
+    }
+    #next-preview {
+      position: absolute;
+      width: 58px;
+      height: 58px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: 900;
+      color: #fff;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+      transition: left 0.08s cubic-bezier(0.2, 0, 0.2, 1);
+      pointer-events: none;
+    }
+
+    /* CANVAS VIEWPORT */
+    #canvas-card {
       position: relative;
       width: 100%;
       max-width: 360px;
-      aspect-ratio: 5 / 7;
-      margin: auto 0;
-      border-radius: 16px;
-      background: #14151f;
-      border: 2px solid rgba(255, 255, 255, 0.06);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+      aspect-ratio: 5 / 7.2;
+      border-radius: 22px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      box-shadow: 0 16px 40px rgba(0,0,0,0.6);
       overflow: hidden;
+      margin: auto 0 10px 0;
     }
     canvas {
       width: 100%;
@@ -203,49 +213,49 @@
       display: block;
     }
 
-    /* MODALS & OVERLAYS */
+    /* MODALS */
     .modal {
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: rgba(0,0,0,0.85);
-      backdrop-filter: blur(8px);
+      inset: 0;
+      background: rgba(13, 15, 20, 0.85);
+      backdrop-filter: blur(10px);
       display: flex;
       align-items: center;
       justify-content: center;
-      z-index: 200;
+      z-index: 100;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.25s ease;
+      transition: opacity 0.2s ease;
     }
     .modal.active {
       opacity: 1;
       pointer-events: auto;
     }
     .modal-box {
-      background: #1c1d29;
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 24px;
-      width: 85%;
+      background: #191c26;
+      border: 1px solid var(--border);
+      border-radius: 26px;
+      width: 86%;
       max-width: 320px;
-      padding: 24px;
+      padding: 26px 22px;
       text-align: center;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.7);
     }
     .modal-box h2 {
       font-size: 24px;
+      font-weight: 900;
+      letter-spacing: -0.5px;
       margin-bottom: 12px;
     }
-    .guide-text {
-      text-align: left;
+    .guide-body {
       font-size: 13px;
-      color: #a0a3bd;
+      color: #94a3b8;
+      text-align: left;
       line-height: 1.6;
-      margin-bottom: 20px;
+      margin-bottom: 22px;
     }
-    .guide-text b {
-      color: #fff;
+    .guide-body b {
+      color: #f1f5f9;
     }
   </style>
 </head>
@@ -253,85 +263,101 @@
 
   <!-- 1. HOME SCREEN -->
   <section class="screen active" id="home-screen">
-    <div class="brand-box">
-      <div class="logo-badge">PUZZLE DROP</div>
-      <h1>DROP 2048</h1>
-      <p style="color:#717388; font-size:13px; margin-top:6px;">Merge & Reach 2048</p>
+    <div class="hero-area">
+      <div class="hero-badge">Physics Puzzle</div>
+      <h1 class="hero-title">DROP 2048</h1>
+      <p class="hero-sub">Drop • Merge • Reach 2048</p>
     </div>
 
     <div class="menu-group">
-      <button class="btn btn-play" id="start-game-btn">▶ PLAY GAME</button>
-      <button class="btn btn-secondary" id="open-rules-btn">📖 How to Play</button>
-      <button class="btn btn-secondary" id="toggle-sound-btn">🔊 Sound: ON</button>
+      <button class="btn btn-primary" id="start-game-btn">▶ Play Game</button>
+      <button class="btn btn-outline" id="rules-btn">How to Play</button>
+      <button class="btn btn-outline" id="sound-btn">🔊 Sound: ON</button>
     </div>
   </section>
 
   <!-- 2. GAME SCREEN -->
   <section class="screen" id="game-screen">
     <header>
-      <button class="btn-icon" id="pause-btn">⏸</button>
-      <div style="display:flex; gap:8px;">
-        <div class="stat-pill">
-          <span>Score</span>
-          <b id="score-val">0</b>
+      <button class="icon-btn" id="pause-btn">⏸</button>
+      <div class="stats-wrap">
+        <div class="stat-box">
+          <div class="stat-label">Score</div>
+          <div class="stat-val" id="score-text">0</div>
         </div>
-        <div class="stat-pill">
-          <span>Best</span>
-          <b id="best-val">0</b>
+        <div class="stat-box">
+          <div class="stat-label">Best</div>
+          <div class="stat-val" id="best-text">0</div>
         </div>
       </div>
     </header>
 
-    <div id="dropper-lane">
-      <div id="next-block">2</div>
+    <div id="dropper-container">
+      <div id="next-preview">2</div>
     </div>
 
-    <div id="board-wrapper">
-      <canvas id="game-canvas"></canvas>
+    <div id="canvas-card">
+      <canvas id="gameCanvas"></canvas>
     </div>
   </section>
-
-  <!-- PAUSE / OPTIONS MODAL -->
-  <div class="modal" id="pause-modal">
-    <div class="modal-box">
-      <h2>GAME PAUSED</h2>
-      <div style="display:flex; flex-direction:column; gap:12px; margin-top:16px;">
-        <button class="btn btn-play" id="resume-btn">Resume</button>
-        <button class="btn btn-secondary" id="restart-from-pause-btn">Restart Game</button>
-        <button class="btn btn-secondary" id="quit-home-btn">Main Menu</button>
-      </div>
-    </div>
-  </div>
 
   <!-- HOW TO PLAY MODAL -->
   <div class="modal" id="rules-modal">
     <div class="modal-box">
-      <h2>HOW TO PLAY</h2>
-      <div class="guide-text">
-        1. <b>Tap any column:</b> The current number block will drop down.<br><br>
-        2. <b>Match & Merge:</b> When identical numbers hit each other, they merge into their sum (2 + 2 = 4, 4 + 4 = 8).<br><br>
-        3. <b>Chain Reactions:</b> Merge consecutive blocks to trigger combos and score big.<br><br>
-        4. <b>Don't Overflow:</b> If any column fills to the top, game is over!
+      <h2>How to Play</h2>
+      <div class="guide-body">
+        1. <b>Tap or swipe:</b> Choose any lane to drop the number block.<br><br>
+        2. <b>Smooth Physics:</b> Watch blocks accelerate and drop down.<br><br>
+        3. <b>Instant Merge:</b> When two matching numbers collide, they collapse into one higher block (2+2=4, 4+4=8).<br><br>
+        4. <b>Overfill:</b> Don't let the blocks reach the top danger line!
       </div>
-      <button class="btn btn-play" id="close-rules-btn">Got It!</button>
+      <button class="btn btn-primary" id="close-rules-btn">Start Playing</button>
+    </div>
+  </div>
+
+  <!-- PAUSE MODAL -->
+  <div class="modal" id="pause-modal">
+    <div class="modal-box">
+      <h2>Game Paused</h2>
+      <div style="display:flex; flex-direction:column; gap:10px; margin-top:16px;">
+        <button class="btn btn-primary" id="resume-btn">Resume</button>
+        <button class="btn btn-outline" id="restart-pause-btn">Restart</button>
+        <button class="btn btn-outline" id="home-pause-btn">Main Menu</button>
+      </div>
     </div>
   </div>
 
   <!-- GAME OVER MODAL -->
-  <div class="modal" id="game-over-modal">
+  <div class="modal" id="over-modal">
     <div class="modal-box">
-      <h2 style="color:#ff5252;">GAME OVER</h2>
-      <p style="color:#a0a3bd; font-size:13px; margin-bottom:16px;">Board is completely full!</p>
-      <div style="display:flex; flex-direction:column; gap:12px;">
-        <button class="btn btn-play" id="play-again-btn">Play Again</button>
-        <button class="btn btn-secondary" id="over-to-home-btn">Main Menu</button>
+      <h2 style="color: #ff4757;">Game Over</h2>
+      <p style="font-size:13px; color:#94a3b8; margin-bottom:18px;">The board reached the top!</p>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <button class="btn btn-primary" id="again-btn">Play Again</button>
+        <button class="btn btn-outline" id="home-over-btn">Main Menu</button>
       </div>
     </div>
   </div>
 
   <script>
-    // --- AUDIO SYSTEM (Web Audio API) ---
-    const Sound = {
+    // --- HIGH IMPACT MINIMAL COLOR PALETTE ---
+    const PALETTE = {
+      2:    { bg: '#38bdf8', text: '#082f49' }, // Cyan
+      4:    { bg: '#34d399', text: '#022c22' }, // Mint Emerald
+      8:    { bg: '#facc15', text: '#422006' }, // Amber
+      16:   { bg: '#fb923c', text: '#431407' }, // Coral Orange
+      32:   { bg: '#f87171', text: '#450a0a' }, // Salmon Red
+      64:   { bg: '#e879f9', text: '#4a044e' }, // Neon Violet
+      128:  { bg: '#a855f7', text: '#ffffff' }, // Purple
+      256:  { bg: '#6366f1', text: '#ffffff' }, // Indigo
+      512:  { bg: '#3b82f6', text: '#ffffff' }, // Blue
+      1024: { bg: '#10b981', text: '#ffffff' }, // Deep Mint
+      2048: { bg: '#ff4757', text: '#ffffff' }, // Electric Ruby
+      4096: { bg: '#fbbf24', text: '#000000' }
+    };
+
+    // --- SYNTHESIZED SOUNDS ---
+    const AudioFX = {
       ctx: null,
       muted: false,
       init() {
@@ -341,101 +367,468 @@
         }
         if (this.ctx.state === 'suspended') this.ctx.resume();
       },
-      drop() {
+      playDrop() {
         if (this.muted) return;
         this.init();
         try {
           const osc = this.ctx.createOscillator();
           const gain = this.ctx.createGain();
-          osc.frequency.setValueAtTime(320, this.ctx.currentTime);
-          osc.frequency.exponentialRampToValueAtTime(140, this.ctx.currentTime + 0.08);
-          gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.08);
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(380, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(160, this.ctx.currentTime + 0.1);
+          gain.gain.setValueAtTime(0.18, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.1);
           osc.connect(gain);
           gain.connect(this.ctx.destination);
           osc.start();
-          osc.stop(this.ctx.currentTime + 0.08);
+          osc.stop(this.ctx.currentTime + 0.1);
         } catch(e) {}
       },
-      merge(val) {
+      playMerge(val) {
         if (this.muted) return;
         this.init();
         try {
           const osc = this.ctx.createOscillator();
           const gain = this.ctx.createGain();
-          const pitch = 300 + Math.min(val * 15, 800);
+          const baseFreq = 260 + Math.min(Math.log2(val || 2) * 60, 600);
           osc.type = 'triangle';
-          osc.frequency.setValueAtTime(pitch, this.ctx.currentTime);
-          osc.frequency.exponentialRampToValueAtTime(pitch * 1.5, this.ctx.currentTime + 0.12);
-          gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.12);
+          osc.frequency.setValueAtTime(baseFreq, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.6, this.ctx.currentTime + 0.14);
+          gain.gain.setValueAtTime(0.24, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.14);
           osc.connect(gain);
           gain.connect(this.ctx.destination);
           osc.start();
-          osc.stop(this.ctx.currentTime + 0.12);
+          osc.stop(this.ctx.currentTime + 0.14);
         } catch(e) {}
       }
     };
 
-    // --- GAME ENGINE SETUP ---
+    // --- GAME ENGINE & ANIMATION SYSTEM ---
     const COLS = 5;
     const ROWS = 7;
-    const PALETTE = {
-      2: '#3b82f6',
-      4: '#06b6d4',
-      8: '#10b981',
-      16: '#84cc16',
-      32: '#eab308',
-      64: '#f97316',
-      128: '#ef4444',
-      256: '#ec4899',
-      512: '#8b5cf6',
-      1024: '#6366f1',
-      2048: '#d946ef',
-      4096: '#f43f5e'
-    };
-
-    let board = [];
-    let score = 0;
-    let highScore = parseInt(localStorage.getItem('drop2048_high') || '0', 10);
-    let nextValue = 2;
-    let selectedCol = 2;
-    let isDropping = false;
-
-    const canvas = document.getElementById('game-canvas');
+    const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
-    const scoreVal = document.getElementById('score-val');
-    const bestVal = document.getElementById('best-val');
-    const nextBlockEl = document.getElementById('next-block');
-    const dropperLane = document.getElementById('dropper-lane');
+    const scoreText = document.getElementById('score-text');
+    const bestText = document.getElementById('best-text');
+    const nextPreview = document.getElementById('next-preview');
+    const dropperContainer = document.getElementById('dropper-container');
 
-    bestVal.innerText = highScore;
+    let grid = [];
+    let activeFallingBlock = null; // Animating drop block
+    let mergingAnimations = [];    // Squash & stretch pulse animations
+    let floatingTexts = [];        // Score popup bubbles
+    let particles = [];            // Color burst particles
 
-    function initBoard() {
-      board = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
+    let score = 0;
+    let highScore = parseInt(localStorage.getItem('drop2048_hi') || '0', 10);
+    bestText.innerText = highScore;
+
+    let selectedCol = 2;
+    let nextValue = 2;
+    let isProcessing = false;
+
+    function initGame() {
+      grid = Array.from({ length: ROWS }, () => Array(COLS).fill(null));
       score = 0;
-      scoreVal.innerText = '0';
-      pickNextValue();
-      updateDropperPosition();
+      scoreText.innerText = '0';
+      activeFallingBlock = null;
+      mergingAnimations = [];
+      floatingTexts = [];
+      particles = [];
+      isProcessing = false;
+      rollNextValue();
+      updatePreviewPosition();
     }
 
-    function pickNextValue() {
-      const options = [2, 4, 8, 16, 32, 64];
-      const maxInBoard = Math.max(2, ...board.flat());
-      let filtered = options.filter(v => v <= Math.max(32, maxInBoard / 4));
-      nextValue = filtered[Math.floor(Math.random() * filtered.length)];
-      nextBlockEl.innerText = nextValue;
-      nextBlockEl.style.backgroundColor = PALETTE[nextValue] || '#475569';
+    function rollNextValue() {
+      const candidates = [2, 4, 8, 16, 32, 64];
+      let maxBlock = 2;
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          if (grid[r][c]) maxBlock = Math.max(maxBlock, grid[r][c].value);
+        }
+      }
+      const allowed = candidates.filter(v => v <= Math.max(16, maxBlock / 2));
+      nextValue = allowed[Math.floor(Math.random() * allowed.length)];
+
+      const colorData = PALETTE[nextValue] || PALETTE[2];
+      nextPreview.innerText = nextValue;
+      nextPreview.style.backgroundColor = colorData.bg;
+      nextPreview.style.color = colorData.text;
     }
 
-    function updateDropperPosition() {
-      const laneWidth = dropperLane.clientWidth;
-      const colWidth = laneWidth / COLS;
-      const leftPx = selectedCol * colWidth + (colWidth - 60) / 2;
-      nextBlockEl.style.left = `${leftPx}px`;
+    function updatePreviewPosition() {
+      const w = dropperContainer.clientWidth;
+      const colWidth = w / COLS;
+      const px = selectedCol * colWidth + (colWidth - 58) / 2;
+      nextPreview.style.left = `${px}px`;
     }
 
-    function resizeCanvas() {
+    function triggerDrop(col) {
+      if (isProcessing || activeFallingBlock) return;
+
+      // Find resting row
+      let targetRow = -1;
+      for (let r = ROWS - 1; r >= 0; r--) {
+        if (!grid[r][col]) {
+          targetRow = r;
+          break;
+        }
+      }
+
+      if (targetRow === -1) {
+        // Lane is packed to the top
+        return;
+      }
+
+      isProcessing = true;
+      AudioFX.playDrop();
+
+      // Launch dynamic animated falling block
+      activeFallingBlock = {
+        col: col,
+        targetRow: targetRow,
+        currentY: -1, // Start slightly above canvas
+        speed: 0.15,  // Acceleration velocity
+        value: nextValue
+      };
+
+      rollNextValue();
+    }
+
+    // Step physics & resolves
+    function updatePhysics() {
+      // 1. Falling Block Motion
+      if (activeFallingBlock) {
+        activeFallingBlock.speed += 0.055; // gravity acceleration
+        activeFallingBlock.currentY += activeFallingBlock.speed;
+
+        if (activeFallingBlock.currentY >= activeFallingBlock.targetRow) {
+          const r = activeFallingBlock.targetRow;
+          const c = activeFallingBlock.col;
+          const val = activeFallingBlock.value;
+
+          grid[r][c] = {
+            value: val,
+            scaleX: 1.25, // Squash upon landing
+            scaleY: 0.8
+          };
+
+          activeFallingBlock = null;
+          resolveMerges();
+        }
+      }
+
+      // 2. Squash & Stretch recovery
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          const cell = grid[r][c];
+          if (cell) {
+            cell.scaleX += (1 - cell.scaleX) * 0.2;
+            cell.scaleY += (1 - cell.scaleY) * 0.2;
+          }
+        }
+      }
+
+      // 3. Floating score popups
+      for (let i = floatingTexts.length - 1; i >= 0; i--) {
+        const ft = floatingTexts[i];
+        ft.y -= 1.8;
+        ft.alpha -= 0.03;
+        if (ft.alpha <= 0) floatingTexts.splice(i, 1);
+      }
+
+      // 4. Spark particles
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.2; // gravity
+        p.alpha -= 0.03;
+        if (p.alpha <= 0) particles.splice(i, 1);
+      }
+    }
+
+    function resolveMerges() {
+      let merged = false;
+
+      // Bottom-up check
+      for (let r = ROWS - 1; r >= 0; r--) {
+        for (let c = 0; c < COLS; c++) {
+          if (!grid[r][c]) continue;
+          const val = grid[r][c].value;
+
+          // Check bottom neighbor
+          if (r + 1 < ROWS && grid[r + 1][c] && grid[r + 1][c].value === val) {
+            mergeInto(r + 1, c, r, c);
+            merged = true;
+            break;
+          }
+          // Check left neighbor
+          if (c > 0 && grid[r][c - 1] && grid[r][c - 1].value === val) {
+            mergeInto(r, c - 1, r, c);
+            merged = true;
+            break;
+          }
+          // Check right neighbor
+          if (c + 1 < COLS && grid[r][c + 1] && grid[r][c + 1].value === val) {
+            mergeInto(r, c + 1, r, c);
+            merged = true;
+            break;
+          }
+        }
+        if (merged) break;
+      }
+
+      // Apply gravity to floating blocks
+      for (let c = 0; c < COLS; c++) {
+        for (let r = ROWS - 1; r > 0; r--) {
+          if (!grid[r][c] && grid[r - 1][c]) {
+            grid[r][c] = grid[r - 1][c];
+            grid[r - 1][c] = null;
+            merged = true;
+          }
+        }
+      }
+
+      if (merged) {
+        setTimeout(resolveMerges, 110);
+      } else {
+        isProcessing = false;
+        checkGameOver();
+      }
+    }
+
+    function mergeInto(targetR, targetC, fromR, fromC) {
+      const newVal = grid[targetR][targetC].value * 2;
+      grid[targetR][targetC] = {
+        value: newVal,
+        scaleX: 1.45,
+        scaleY: 1.45
+      };
+      grid[fromR][fromC] = null;
+
+      score += newVal;
+      scoreText.innerText = score;
+      if (score > highScore) {
+        highScore = score;
+        localStorage.setItem('drop2048_hi', highScore);
+        bestText.innerText = highScore;
+      }
+
+      AudioFX.playMerge(newVal);
+
+      // Particle & Score Visuals
+      const rect = canvas.getBoundingClientRect();
+      const colW = rect.width / COLS;
+      const rowH = rect.height / ROWS;
+      const px = targetC * colW + colW / 2;
+      const py = targetR * rowH + rowH / 2;
+
+      spawnParticles(px, py, (PALETTE[newVal] || PALETTE[2]).bg);
+      floatingTexts.push({
+        text: `+${newVal}`,
+        x: px,
+        y: py - 10,
+        alpha: 1
+      });
+    }
+
+    function spawnParticles(x, y, color) {
+      for (let i = 0; i < 14; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const spd = Math.random() * 5 + 2;
+        particles.push({
+          x, y,
+          vx: Math.cos(angle) * spd,
+          vy: Math.sin(angle) * spd - 1,
+          radius: Math.random() * 3 + 2,
+          color,
+          alpha: 1
+        });
+      }
+    }
+
+    function checkGameOver() {
+      let isFull = true;
+      for (let c = 0; c < COLS; c++) {
+        if (!grid[0][c]) isFull = false;
+      }
+      if (isFull) {
+        document.getElementById('over-modal').classList.add('active');
+      }
+    }
+
+    // --- RENDER PIPELINE ---
+    function render() {
+      updatePhysics();
+
+      const rect = canvas.getBoundingClientRect();
+      const colW = rect.width / COLS;
+      const rowH = rect.height / ROWS;
+
+      ctx.clearRect(0, 0, rect.width, rect.height);
+
+      // 1. Column Guidance lines & Selected Column Highlight
+      for (let c = 0; c < COLS; c++) {
+        if (c === selectedCol) {
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.025)';
+          ctx.fillRect(c * colW, 0, colW, rect.height);
+        }
+      }
+
+      // 2. Static Empty Slot Plates
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          const x = c * colW + 4;
+          const y = r * rowH + 4;
+          const w = colW - 8;
+          const h = rowH - 8;
+
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.02)';
+          roundRect(ctx, x, y, w, h, 14);
+          ctx.fill();
+        }
+      }
+
+      // 3. Render Resting Grid Blocks
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          const cell = grid[r][c];
+          if (cell) {
+            drawBlock(c * colW + colW / 2, r * rowH + rowH / 2, colW - 8, rowH - 8, cell.value, cell.scaleX, cell.scaleY);
+          }
+        }
+      }
+
+      // 4. Render Active Falling Block (with dynamic speed motion)
+      if (activeFallingBlock) {
+        const c = activeFallingBlock.col;
+        const currentY = activeFallingBlock.currentY;
+        const px = c * colW + colW / 2;
+        const py = currentY * rowH + rowH / 2;
+
+        // Motion trail
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+        roundRect(ctx, c * colW + 6, py - 30, colW - 12, 30, 8);
+        ctx.fill();
+
+        drawBlock(px, py, colW - 8, rowH - 8, activeFallingBlock.value, 0.96, 1.04);
+      }
+
+      // 5. Render Spark Particles
+      for (const p of particles) {
+        ctx.save();
+        ctx.globalAlpha = p.alpha;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // 6. Render Floating Score Bubbles
+      for (const ft of floatingTexts) {
+        ctx.save();
+        ctx.globalAlpha = ft.alpha;
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 16px -apple-system, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(ft.text, ft.x, ft.y);
+        ctx.restore();
+      }
+
+      requestAnimationFrame(render);
+    }
+
+    function drawBlock(cx, cy, w, h, val, sx = 1, sy = 1) {
+      const info = PALETTE[val] || PALETTE[2];
+
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.scale(sx, sy);
+
+      // Ambient Drop Shadow
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
+      ctx.shadowBlur = 10;
+      ctx.shadowOffsetY = 4;
+
+      // Card Body
+      ctx.fillStyle = info.bg;
+      roundRect(ctx, -w / 2, -h / 2, w, h, 14);
+      ctx.fill();
+
+      // Reset Shadow for Text
+      ctx.shadowColor = 'transparent';
+
+      // Inner Highlight Rim
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+      ctx.lineWidth = 1.5;
+      roundRect(ctx, -w / 2 + 1, -h / 2 + 1, w - 2, h - 2, 13);
+      ctx.stroke();
+
+      // Bold Typographic Number
+      ctx.fillStyle = info.text;
+      ctx.font = `900 ${val >= 1024 ? w * 0.3 : w * 0.36}px -apple-system, BlinkMacSystemFont, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(val, 0, 1);
+
+      ctx.restore();
+    }
+
+    function roundRect(c, x, y, w, h, r) {
+      c.beginPath();
+      c.moveTo(x + r, y);
+      c.arcTo(x + w, y, x + w, y + h, r);
+      c.arcTo(x + w, y + h, x, y + h, r);
+      c.arcTo(x, y + h, x, y, r);
+      c.arcTo(x, y, x + w, y, r);
+      c.closePath();
+    }
+
+    // --- INTERACTION & LANE NAVIGATION ---
+    function setLaneFromPointer(clientX) {
+      const rect = canvas.getBoundingClientRect();
+      const x = clientX - rect.left;
+      const colW = rect.width / COLS;
+      const col = Math.max(0, Math.min(COLS - 1, Math.floor(x / colW)));
+      selectedCol = col;
+      updatePreviewPosition();
+    }
+
+    function onPointerStart(e) {
+      const cx = e.clientX || (e.touches && e.touches[0].clientX);
+      if (!cx) return;
+      setLaneFromPointer(cx);
+    }
+
+    function onPointerMove(e) {
+      const cx = e.clientX || (e.touches && e.touches[0].clientX);
+      if (!cx) return;
+      setLaneFromPointer(cx);
+    }
+
+    function onPointerEnd() {
+      triggerDrop(selectedCol);
+    }
+
+    canvas.addEventListener('pointerdown', onPointerStart);
+    canvas.addEventListener('pointermove', onPointerMove);
+    canvas.addEventListener('pointerup', onPointerEnd);
+
+    dropperContainer.addEventListener('pointerdown', onPointerStart);
+    dropperContainer.addEventListener('pointermove', onPointerMove);
+    dropperContainer.addEventListener('pointerup', onPointerEnd);
+
+    // Screen Management
+    function switchScreen(id) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    function fitCanvas() {
       const rect = canvas.getBoundingClientRect();
       const dpr = window.devicePixelRatio || 1;
       canvas.width = rect.width * dpr;
@@ -443,240 +836,59 @@
       ctx.scale(dpr, dpr);
     }
 
-    // --- GAMEPLAY LOGIC ---
-    function dropBlock(col) {
-      if (isDropping) return;
-      
-      // Find lowest empty row
-      let targetRow = -1;
-      for (let r = ROWS - 1; r >= 0; r--) {
-        if (board[r][col] === 0) {
-          targetRow = r;
-          break;
-        }
-      }
+    // UI Buttons
+    document.getElementById('start-game-btn').onclick = () => {
+      AudioFX.init();
+      switchScreen('game-screen');
+      fitCanvas();
+      initGame();
+    };
 
-      if (targetRow === -1) {
-        // Column is full
-        return;
-      }
-
-      isDropping = true;
-      Sound.drop();
-
-      board[targetRow][col] = nextValue;
-      pickNextValue();
-
-      setTimeout(() => {
-        resolveBoardMerges(() => {
-          isDropping = false;
-          checkGameOver();
-        });
-      }, 100);
-    }
-
-    function resolveBoardMerges(callback) {
-      let mergedAny = false;
-
-      for (let r = ROWS - 1; r >= 0; r--) {
-        for (let c = 0; c < COLS; c++) {
-          const current = board[r][c];
-          if (current === 0) continue;
-
-          // Check bottom neighbor
-          if (r + 1 < ROWS && board[r + 1][c] === current) {
-            board[r + 1][c] *= 2;
-            board[r][c] = 0;
-            score += board[r + 1][c];
-            Sound.merge(board[r + 1][c]);
-            mergedAny = true;
-            break;
-          }
-          // Check left neighbor
-          if (c > 0 && board[r][c - 1] === current) {
-            board[r][c - 1] *= 2;
-            board[r][c] = 0;
-            score += board[r][c - 1];
-            Sound.merge(board[r][c - 1]);
-            mergedAny = true;
-            break;
-          }
-          // Check right neighbor
-          if (c < COLS - 1 && board[r][c + 1] === current) {
-            board[r][c + 1] *= 2;
-            board[r][c] = 0;
-            score += board[r][c + 1];
-            Sound.merge(board[r][c + 1]);
-            mergedAny = true;
-            break;
-          }
-        }
-        if (mergedAny) break;
-      }
-
-      // Apply gravity to floating blocks
-      for (let c = 0; c < COLS; c++) {
-        for (let r = ROWS - 1; r > 0; r--) {
-          if (board[r][c] === 0 && board[r - 1][c] !== 0) {
-            board[r][c] = board[r - 1][c];
-            board[r - 1][c] = 0;
-            mergedAny = true;
-          }
-        }
-      }
-
-      scoreVal.innerText = score;
-      if (score > highScore) {
-        highScore = score;
-        localStorage.setItem('drop2048_high', highScore);
-        bestVal.innerText = highScore;
-      }
-
-      if (mergedAny) {
-        setTimeout(() => resolveBoardMerges(callback), 140);
-      } else {
-        callback();
-      }
-    }
-
-    function checkGameOver() {
-      // If row 0 in all columns has numbers and no moves left
-      let topFull = true;
-      for (let c = 0; c < COLS; c++) {
-        if (board[0][c] === 0) topFull = false;
-      }
-      if (topFull) {
-        document.getElementById('game-over-modal').classList.add('active');
-      }
-    }
-
-    // --- RENDER LOOP ---
-    function render() {
-      const rect = canvas.getBoundingClientRect();
-      const colWidth = rect.width / COLS;
-      const rowHeight = rect.height / ROWS;
-
-      ctx.clearRect(0, 0, rect.width, rect.height);
-
-      // Draw grid slots
-      for (let r = 0; r < ROWS; r++) {
-        for (let c = 0; c < COLS; c++) {
-          const val = board[r][c];
-          const x = c * colWidth + 4;
-          const y = r * rowHeight + 4;
-          const w = colWidth - 8;
-          const h = rowHeight - 8;
-
-          if (val === 0) {
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
-            roundRect(ctx, x, y, w, h, 10);
-            ctx.fill();
-          } else {
-            ctx.fillStyle = PALETTE[val] || '#6366f1';
-            roundRect(ctx, x, y, w, h, 10);
-            ctx.fill();
-
-            ctx.fillStyle = '#ffffff';
-            ctx.font = `bold ${val >= 1024 ? 14 : 17}px -apple-system, sans-serif`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(val, x + w / 2, y + h / 2);
-          }
-        }
-      }
-      requestAnimationFrame(render);
-    }
-
-    function roundRect(context, x, y, w, h, r) {
-      context.beginPath();
-      context.moveTo(x + r, y);
-      context.arcTo(x + w, y, x + w, y + h, r);
-      context.arcTo(x + w, y + h, x, y + h, r);
-      context.arcTo(x, y + h, x, y, r);
-      context.arcTo(x, y, x + w, y, r);
-      context.closePath();
-    }
-
-    // --- INPUT & SCREEN SWITCHING ---
-    function showScreen(id) {
-      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-      document.getElementById(id).classList.add('active');
-    }
-
-    // Click/Touch on Dropper or Board selects lane & drops
-    function handleLaneTap(clientX) {
-      const rect = canvas.getBoundingClientRect();
-      const x = clientX - rect.left;
-      const colWidth = rect.width / COLS;
-      const tappedCol = Math.floor(x / colWidth);
-      if (tappedCol >= 0 && tappedCol < COLS) {
-        selectedCol = tappedCol;
-        updateDropperPosition();
-        dropBlock(tappedCol);
-      }
-    }
-
-    canvas.addEventListener('pointerdown', (e) => handleLaneTap(e.clientX));
-    dropperLane.addEventListener('pointerdown', (e) => handleLaneTap(e.clientX));
-
-    // Home buttons
-    document.getElementById('start-game-btn').addEventListener('click', () => {
-      Sound.init();
-      showScreen('game-screen');
-      resizeCanvas();
-      initBoard();
-    });
-
-    document.getElementById('open-rules-btn').addEventListener('click', () => {
+    document.getElementById('rules-btn').onclick = () => {
       document.getElementById('rules-modal').classList.add('active');
-    });
-
-    document.getElementById('close-rules-btn').addEventListener('click', () => {
+    };
+    document.getElementById('close-rules-btn').onclick = () => {
       document.getElementById('rules-modal').classList.remove('active');
-    });
+    };
 
-    document.getElementById('toggle-sound-btn').addEventListener('click', (e) => {
-      Sound.muted = !Sound.muted;
-      e.target.innerText = Sound.muted ? '🔈 Sound: OFF' : '🔊 Sound: ON';
-    });
+    document.getElementById('sound-btn').onclick = (e) => {
+      AudioFX.muted = !AudioFX.muted;
+      e.target.innerText = AudioFX.muted ? '🔈 Sound: OFF' : '🔊 Sound: ON';
+    };
 
-    // Pause & Exit options
-    document.getElementById('pause-btn').addEventListener('click', () => {
+    // Pause Modals
+    document.getElementById('pause-btn').onclick = () => {
       document.getElementById('pause-modal').classList.add('active');
-    });
-
-    document.getElementById('resume-btn').addEventListener('click', () => {
+    };
+    document.getElementById('resume-btn').onclick = () => {
       document.getElementById('pause-modal').classList.remove('active');
-    });
-
-    document.getElementById('restart-from-pause-btn').addEventListener('click', () => {
+    };
+    document.getElementById('restart-pause-btn').onclick = () => {
       document.getElementById('pause-modal').classList.remove('active');
-      initBoard();
-    });
-
-    document.getElementById('quit-home-btn').addEventListener('click', () => {
+      initGame();
+    };
+    document.getElementById('home-pause-btn').onclick = () => {
       document.getElementById('pause-modal').classList.remove('active');
-      showScreen('home-screen');
-    });
+      switchScreen('home-screen');
+    };
 
-    // Game Over buttons
-    document.getElementById('play-again-btn').addEventListener('click', () => {
-      document.getElementById('game-over-modal').classList.remove('active');
-      initBoard();
-    });
-
-    document.getElementById('over-to-home-btn').addEventListener('click', () => {
-      document.getElementById('game-over-modal').classList.remove('active');
-      showScreen('home-screen');
-    });
+    // Game Over Modals
+    document.getElementById('again-btn').onclick = () => {
+      document.getElementById('over-modal').classList.remove('active');
+      initGame();
+    };
+    document.getElementById('home-over-btn').onclick = () => {
+      document.getElementById('over-modal').classList.remove('active');
+      switchScreen('home-screen');
+    };
 
     window.addEventListener('resize', () => {
-      resizeCanvas();
-      updateDropperPosition();
+      fitCanvas();
+      updatePreviewPosition();
     });
 
     window.addEventListener('load', () => {
-      resizeCanvas();
+      fitCanvas();
       requestAnimationFrame(render);
     });
   </script>
