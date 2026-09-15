@@ -3,13 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Drop 2048</title>
+  <title>Drop 2048: Zen Edition</title>
   <style>
     :root {
-      --bg: #0f1118;
-      --card-bg: #181a24;
-      --border-color: rgba(255, 255, 255, 0.08);
-      --accent: #ff4757;
+      --bg-top: #f8fafc;
+      --bg-bottom: #e2e8f0;
+      --board-bg: #ffffff;
+      --slot-bg: #f1f5f9;
+      --text-dark: #1e293b;
+      --text-muted: #64748b;
+      --shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.08), 0 4px 12px -2px rgba(0, 0, 0, 0.05);
     }
     * {
       box-sizing: border-box;
@@ -20,9 +23,15 @@
       touch-action: none;
     }
     body {
-      background-color: var(--bg);
-      color: #fff;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
+      /* Minimalist geometric SVG grid backdrop */
+      background-image: 
+        radial-gradient(at 10% 10%, rgba(224, 231, 255, 0.6) 0px, transparent 50%),
+        radial-gradient(at 90% 90%, rgba(254, 226, 226, 0.5) 0px, transparent 50%),
+        radial-gradient(#cbd5e1 1.2px, transparent 1.2px);
+      background-size: 100% 100%, 100% 100%, 24px 24px;
+      color: var(--text-dark);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, sans-serif;
       overflow: hidden;
       height: 100vh;
       width: 100vw;
@@ -32,7 +41,7 @@
       justify-content: center;
     }
 
-    /* SCREEN ROUTING */
+    /* SCREEN MANAGEMENT */
     .screen {
       position: absolute;
       inset: 0;
@@ -40,41 +49,53 @@
       flex-direction: column;
       align-items: center;
       justify-content: space-between;
-      padding: env(safe-area-inset-top, 20px) 16px env(safe-area-inset-bottom, 20px) 16px;
+      padding: env(safe-area-inset-top, 24px) 18px env(safe-area-inset-bottom, 24px) 18px;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.2s ease;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      transform: scale(0.98);
     }
     .screen.active {
       opacity: 1;
       pointer-events: auto;
+      transform: scale(1);
     }
 
     /* HOME SCREEN */
-    .hero-box {
+    .hero-section {
       text-align: center;
       margin-top: 14vh;
     }
-    .badge {
-      display: inline-block;
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 16px;
+      border-radius: 30px;
       font-size: 11px;
-      font-weight: 800;
-      letter-spacing: 2px;
-      padding: 6px 14px;
-      border-radius: 20px;
-      background: rgba(255, 71, 87, 0.15);
-      color: #ff6b81;
-      border: 1px solid rgba(255, 71, 87, 0.3);
-      margin-bottom: 14px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      background: #ffffff;
+      color: #6366f1;
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.12);
+      border: 1px solid rgba(99, 102, 241, 0.15);
+      margin-bottom: 16px;
     }
-    .hero-box h1 {
-      font-size: 46px;
+    .hero-title {
+      font-size: 48px;
       font-weight: 900;
-      letter-spacing: -1px;
-      background: linear-gradient(180deg, #fff 40%, #94a3b8);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      letter-spacing: -1.5px;
+      line-height: 1;
+      color: #0f172a;
     }
+    .hero-sub {
+      color: var(--text-muted);
+      font-size: 14px;
+      margin-top: 8px;
+      font-weight: 500;
+    }
+
     .menu-wrap {
       width: 100%;
       max-width: 300px;
@@ -95,19 +116,21 @@
       align-items: center;
       justify-content: center;
       gap: 8px;
+      box-shadow: var(--shadow);
+      transition: transform 0.1s ease;
     }
     .btn:active {
       transform: scale(0.97);
     }
     .btn-main {
-      background: #ff4757;
-      color: #fff;
-      box-shadow: 0 8px 25px rgba(255, 71, 87, 0.4);
+      background: #4f46e5;
+      color: #ffffff;
+      box-shadow: 0 8px 25px rgba(79, 70, 229, 0.28);
     }
     .btn-sub {
-      background: var(--card-bg);
-      border: 1px solid var(--border-color);
-      color: #cbd5e1;
+      background: #ffffff;
+      color: var(--text-dark);
+      border: 1px solid #e2e8f0;
     }
 
     /* GAME HEADER */
@@ -122,48 +145,52 @@
     .icon-btn {
       width: 44px;
       height: 44px;
-      background: var(--card-bg);
-      border: 1px solid var(--border-color);
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
       border-radius: 14px;
-      color: #cbd5e1;
+      color: var(--text-dark);
       font-size: 18px;
       display: flex;
       align-items: center;
       justify-content: center;
+      box-shadow: var(--shadow);
       cursor: pointer;
     }
     .stats-group {
       display: flex;
-      gap: 8px;
+      gap: 10px;
     }
-    .stat-pill {
-      background: var(--card-bg);
-      border: 1px solid var(--border-color);
+    .stat-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
       border-radius: 14px;
-      padding: 6px 14px;
-      min-width: 76px;
+      padding: 6px 16px;
+      min-width: 80px;
       text-align: center;
+      box-shadow: var(--shadow);
     }
-    .stat-pill small {
+    .stat-card small {
       font-size: 9px;
       text-transform: uppercase;
       font-weight: 700;
-      color: #64748b;
+      color: var(--text-muted);
+      letter-spacing: 0.8px;
       display: block;
     }
-    .stat-pill strong {
+    .stat-card strong {
       font-size: 18px;
       font-weight: 800;
+      color: #0f172a;
     }
 
     /* DROPPER ROW */
     #dropper-strip {
       width: 100%;
       max-width: 360px;
-      height: 70px;
+      height: 72px;
+      display: flex;
       position: relative;
       margin-top: 10px;
-      display: flex;
     }
     .dropper-slot {
       flex: 1;
@@ -182,39 +209,42 @@
       justify-content: center;
       font-size: 22px;
       font-weight: 900;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-      transition: all 0.12s ease;
+      color: #ffffff;
+      box-shadow: 0 10px 25px -4px rgba(0, 0, 0, 0.2);
       pointer-events: none;
+      transition: all 0.12s ease;
     }
 
-    /* MAIN BOARD - CSS GRID */
+    /* BOARD FRAME */
     #board-frame {
       width: 100%;
       max-width: 360px;
       height: 64vh;
-      background: var(--card-bg);
-      border: 1px solid var(--border-color);
-      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(12px);
+      border: 1.5px solid rgba(255, 255, 255, 0.8);
+      border-radius: 24px;
       display: grid;
       grid-template-columns: repeat(5, 1fr);
       gap: 6px;
       padding: 8px;
-      box-shadow: 0 16px 40px rgba(0,0,0,0.6);
+      box-shadow: var(--shadow);
       margin: auto 0 10px 0;
     }
-    .column {
+    .col-track {
       display: grid;
       grid-template-rows: repeat(7, 1fr);
       gap: 6px;
-      position: relative;
-      background: rgba(255, 255, 255, 0.02);
-      border-radius: 12px;
+      border-radius: 14px;
+      background: rgba(241, 245, 249, 0.5);
+      cursor: pointer;
     }
     .cell-slot {
       width: 100%;
       height: 100%;
       border-radius: 12px;
-      background: rgba(255, 255, 255, 0.03);
+      background: rgba(255, 255, 255, 0.5);
+      border: 1px solid rgba(226, 232, 240, 0.6);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -229,19 +259,20 @@
       justify-content: center;
       font-size: 20px;
       font-weight: 900;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
-      animation: popIn 0.16s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+      animation: dropPop 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
-    @keyframes popIn {
-      0% { transform: scale(0.4); opacity: 0; }
-      100% { transform: scale(1); opacity: 1; }
+    @keyframes dropPop {
+      0% { transform: translateY(-30px) scale(0.7); opacity: 0; }
+      100% { transform: translateY(0) scale(1); opacity: 1; }
     }
     .tile.merged {
-      animation: pulseMerge 0.22s ease;
+      animation: mergeFlash 0.22s ease-out;
     }
-    @keyframes pulseMerge {
+    @keyframes mergeFlash {
       0% { transform: scale(1); }
-      50% { transform: scale(1.28); }
+      50% { transform: scale(1.22); filter: brightness(1.2); }
       100% { transform: scale(1); }
     }
 
@@ -249,8 +280,8 @@
     .modal {
       position: fixed;
       inset: 0;
-      background: rgba(10, 12, 18, 0.88);
-      backdrop-filter: blur(8px);
+      background: rgba(15, 23, 42, 0.45);
+      backdrop-filter: blur(6px);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -263,15 +294,15 @@
       opacity: 1;
       pointer-events: auto;
     }
-    .modal-box {
-      background: #1e212d;
-      border: 1px solid var(--border-color);
-      border-radius: 24px;
+    .modal-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 26px;
       width: 86%;
       max-width: 320px;
-      padding: 24px;
+      padding: 26px;
       text-align: center;
-      box-shadow: 0 20px 50px rgba(0,0,0,0.7);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
     }
   </style>
 </head>
@@ -279,10 +310,10 @@
 
   <!-- 1. HOME SCREEN -->
   <section class="screen active" id="home-screen">
-    <div class="hero-box">
-      <div class="badge">PHYSICS MERGE</div>
-      <h1>DROP 2048</h1>
-      <p style="color:#64748b; font-size:13px; margin-top:8px;">Tap, Drop & Connect</p>
+    <div class="hero-section">
+      <div class="hero-badge">✦ Minimal Puzzle</div>
+      <h1 class="hero-title">DROP 2048</h1>
+      <p class="hero-sub">Drop • Merge • Relax</p>
     </div>
 
     <div class="menu-wrap">
@@ -297,11 +328,11 @@
     <header>
       <button class="icon-btn" id="pause-btn">⏸</button>
       <div class="stats-group">
-        <div class="stat-pill">
+        <div class="stat-card">
           <small>Score</small>
           <strong id="score-text">0</strong>
         </div>
-        <div class="stat-pill">
+        <div class="stat-card">
           <small>Best</small>
           <strong id="best-text">0</strong>
         </div>
@@ -319,22 +350,22 @@
     </div>
 
     <div id="board-frame">
-      <div class="column" data-col="0"></div>
-      <div class="column" data-col="1"></div>
-      <div class="column" data-col="2"></div>
-      <div class="column" data-col="3"></div>
-      <div class="column" data-col="4"></div>
+      <div class="col-track" data-col="0"></div>
+      <div class="col-track" data-col="1"></div>
+      <div class="col-track" data-col="2"></div>
+      <div class="col-track" data-col="3"></div>
+      <div class="col-track" data-col="4"></div>
     </div>
   </section>
 
   <!-- HOW TO PLAY MODAL -->
   <div class="modal" id="rules-modal">
-    <div class="modal-box">
-      <h2 style="margin-bottom:12px;">How to Play</h2>
-      <p style="font-size:13px; color:#94a3b8; text-align:left; line-height:1.6; margin-bottom:20px;">
-        1. <b>Tap any column:</b> The top number drops into that lane.<br><br>
-        2. <b>Merge Numbers:</b> When the same numbers touch vertically, they combine into their double (2+2=4, 4+4=8).<br><br>
-        3. <b>Don't Overflow:</b> If blocks touch the top line, it's game over!
+    <div class="modal-card">
+      <h2 style="font-size:22px; margin-bottom:12px; color:#0f172a;">How to Play</h2>
+      <p style="font-size:13px; color:#64748b; text-align:left; line-height:1.6; margin-bottom:20px;">
+        1. <b>Tap any column:</b> The top number tile drops into that track.<br><br>
+        2. <b>Match & Merge:</b> Identical numbers colliding vertically merge into their sum (2+2=4, 4+4=8).<br><br>
+        3. <b>Keep Space:</b> Avoid letting any column stack to the top!
       </p>
       <button class="btn btn-main" id="close-rules-btn">Got It!</button>
     </div>
@@ -342,8 +373,8 @@
 
   <!-- PAUSE MODAL -->
   <div class="modal" id="pause-modal">
-    <div class="modal-box">
-      <h2 style="margin-bottom:16px;">Game Paused</h2>
+    <div class="modal-card">
+      <h2 style="font-size:22px; margin-bottom:16px; color:#0f172a;">Game Paused</h2>
       <div style="display:flex; flex-direction:column; gap:10px;">
         <button class="btn btn-main" id="resume-btn">Resume</button>
         <button class="btn btn-sub" id="restart-btn">Restart Game</button>
@@ -354,9 +385,9 @@
 
   <!-- GAME OVER MODAL -->
   <div class="modal" id="over-modal">
-    <div class="modal-box">
-      <h2 style="color:#ff4757; margin-bottom:8px;">Game Over</h2>
-      <p style="font-size:13px; color:#94a3b8; margin-bottom:16px;">Lanes are full!</p>
+    <div class="modal-card">
+      <h2 style="font-size:24px; color:#ef4444; margin-bottom:8px;">Game Over</h2>
+      <p style="font-size:13px; color:#64748b; margin-bottom:18px;">Columns reached the top!</p>
       <div style="display:flex; flex-direction:column; gap:10px;">
         <button class="btn btn-main" id="again-btn">Play Again</button>
         <button class="btn btn-sub" id="over-home-btn">Main Menu</button>
@@ -365,22 +396,22 @@
   </div>
 
   <script>
-    // --- VIBRANT PALETTE ---
+    // --- SOPHISTICATED COLOR PALETTE ---
     const PALETTE = {
-      2:    { bg: '#38bdf8', text: '#082f49' },
-      4:    { bg: '#34d399', text: '#022c22' },
-      8:    { bg: '#facc15', text: '#422006' },
-      16:   { bg: '#fb923c', text: '#431407' },
-      32:   { bg: '#f87171', text: '#450a0a' },
-      64:   { bg: '#e879f9', text: '#4a044e' },
-      128:  { bg: '#a855f7', text: '#ffffff' },
-      256:  { bg: '#6366f1', text: '#ffffff' },
-      512:  { bg: '#3b82f6', text: '#ffffff' },
-      1024: { bg: '#10b981', text: '#ffffff' },
-      2048: { bg: '#ff4757', text: '#ffffff' }
+      2:    { bg: '#3b82f6', text: '#ffffff' }, // Cobalt Blue
+      4:    { bg: '#06b6d4', text: '#ffffff' }, // Cyan
+      8:    { bg: '#10b981', text: '#ffffff' }, // Emerald
+      16:   { bg: '#f59e0b', text: '#ffffff' }, // Amber
+      32:   { bg: '#f97316', text: '#ffffff' }, // Orange
+      64:   { bg: '#ef4444', text: '#ffffff' }, // Coral
+      128:  { bg: '#ec4899', text: '#ffffff' }, // Pink
+      256:  { bg: '#8b5cf6', text: '#ffffff' }, // Violet
+      512:  { bg: '#6366f1', text: '#ffffff' }, // Indigo
+      1024: { bg: '#14b8a6', text: '#ffffff' }, // Teal
+      2048: { bg: '#e11d48', text: '#ffffff' }  // Crimson
     };
 
-    // --- AUDIO SYSTEM ---
+    // --- SOUND SYNTHESIZER ---
     const Sound = {
       ctx: null,
       muted: false,
@@ -397,9 +428,9 @@
         try {
           const osc = this.ctx.createOscillator();
           const gain = this.ctx.createGain();
-          osc.frequency.setValueAtTime(360, this.ctx.currentTime);
-          osc.frequency.exponentialRampToValueAtTime(160, this.ctx.currentTime + 0.08);
-          gain.gain.setValueAtTime(0.18, this.ctx.currentTime);
+          osc.frequency.setValueAtTime(420, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(180, this.ctx.currentTime + 0.08);
+          gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
           gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.08);
           osc.connect(gain);
           gain.connect(this.ctx.destination);
@@ -413,11 +444,11 @@
         try {
           const osc = this.ctx.createOscillator();
           const gain = this.ctx.createGain();
-          const p = 280 + Math.min(Math.log2(val || 2) * 55, 600);
+          const p = 300 + Math.min(Math.log2(val || 2) * 60, 600);
           osc.type = 'triangle';
           osc.frequency.setValueAtTime(p, this.ctx.currentTime);
-          osc.frequency.exponentialRampToValueAtTime(p * 1.5, this.ctx.currentTime + 0.12);
-          gain.gain.setValueAtTime(0.22, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(p * 1.4, this.ctx.currentTime + 0.12);
+          gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
           gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.12);
           osc.connect(gain);
           gain.connect(this.ctx.destination);
@@ -439,7 +470,7 @@
     const activeBlock = document.getElementById('active-block');
     const scoreText = document.getElementById('score-text');
     const bestText = document.getElementById('best-text');
-    const columns = document.querySelectorAll('.column');
+    const columns = document.querySelectorAll('.col-track');
     const dropperSlots = document.querySelectorAll('.dropper-slot');
 
     bestText.innerText = highScore;
@@ -450,8 +481,7 @@
         for (let r = 0; r < ROWS; r++) {
           const slot = document.createElement('div');
           slot.className = 'cell-slot';
-          
-          // Row calculation from bottom up
+
           const tileIdx = (ROWS - 1) - r;
           const val = grid[c][tileIdx];
 
@@ -492,15 +522,13 @@
 
     function dropIntoColumn(col) {
       if (isProcessing) return;
-      if (grid[col].length >= ROWS) return; // Column full
+      if (grid[col].length >= ROWS) return;
 
       isProcessing = true;
       Sound.drop();
 
-      // Push block into column
       grid[col].push(nextValue);
       renderSlots();
-
       rollNextValue();
 
       setTimeout(() => {
@@ -515,7 +543,6 @@
       const arr = grid[col];
       let didMerge = false;
 
-      // Check adjacent vertical matches
       for (let i = 0; i < arr.length - 1; i++) {
         if (arr[i] === arr[i + 1]) {
           const mergedVal = arr[i] * 2;
@@ -554,12 +581,9 @@
       }
     }
 
-    // --- INTERACTION & EVENTS ---
     function setDropperPosition(col) {
       dropperSlots.forEach((slot, idx) => {
-        if (idx === col) {
-          slot.appendChild(activeBlock);
-        }
+        if (idx === col) slot.appendChild(activeBlock);
       });
     }
 
@@ -590,25 +614,16 @@
       showScreen('game-screen');
       initGame();
     };
-
-    document.getElementById('rules-btn').onclick = () => {
-      document.getElementById('rules-modal').classList.add('active');
-    };
-    document.getElementById('close-rules-btn').onclick = () => {
-      document.getElementById('rules-modal').classList.remove('active');
-    };
+    document.getElementById('rules-btn').onclick = () => document.getElementById('rules-modal').classList.add('active');
+    document.getElementById('close-rules-btn').onclick = () => document.getElementById('rules-modal').classList.remove('active');
 
     document.getElementById('sound-btn').onclick = (e) => {
       Sound.muted = !Sound.muted;
       e.target.innerText = Sound.muted ? '🔈 Sound: OFF' : '🔊 Sound: ON';
     };
 
-    document.getElementById('pause-btn').onclick = () => {
-      document.getElementById('pause-modal').classList.add('active');
-    };
-    document.getElementById('resume-btn').onclick = () => {
-      document.getElementById('pause-modal').classList.remove('active');
-    };
+    document.getElementById('pause-btn').onclick = () => document.getElementById('pause-modal').classList.add('active');
+    document.getElementById('resume-btn').onclick = () => document.getElementById('pause-modal').classList.remove('active');
     document.getElementById('restart-btn').onclick = () => {
       document.getElementById('pause-modal').classList.remove('active');
       initGame();
