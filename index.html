@@ -50,7 +50,7 @@
       padding: env(safe-area-inset-top, 24px) 18px env(safe-area-inset-bottom, 24px) 18px;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.2s ease, transform 0.2s ease;
+      transition: opacity 0.25s ease, transform 0.25s ease;
       transform: scale(0.98);
     }
     .screen.active {
@@ -62,7 +62,7 @@
     /* HOME SCREEN */
     .hero-section {
       text-align: center;
-      margin-top: 14vh;
+      margin-top: 12vh;
     }
     .hero-badge {
       display: inline-flex;
@@ -81,7 +81,7 @@
       margin-bottom: 16px;
     }
     .hero-title {
-      font-size: 48px;
+      font-size: 46px;
       font-weight: 900;
       letter-spacing: -1.5px;
       line-height: 1;
@@ -93,7 +93,6 @@
       margin-top: 8px;
       font-weight: 500;
     }
-
     .menu-wrap {
       width: 100%;
       max-width: 300px;
@@ -124,6 +123,11 @@
       background: #4f46e5;
       color: #ffffff;
       box-shadow: 0 8px 25px rgba(79, 70, 229, 0.28);
+    }
+    .btn-reward {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #ffffff;
+      box-shadow: 0 8px 25px rgba(16, 185, 129, 0.35);
     }
     .btn-sub {
       background: #ffffff;
@@ -156,14 +160,15 @@
     }
     .stats-group {
       display: flex;
-      gap: 10px;
+      gap: 8px;
+      align-items: center;
     }
     .stat-card {
       background: #ffffff;
       border: 1px solid #e2e8f0;
       border-radius: 14px;
-      padding: 6px 16px;
-      min-width: 80px;
+      padding: 6px 12px;
+      min-width: 68px;
       text-align: center;
       box-shadow: var(--shadow);
     }
@@ -172,13 +177,17 @@
       text-transform: uppercase;
       font-weight: 700;
       color: var(--text-muted);
-      letter-spacing: 0.8px;
+      letter-spacing: 0.6px;
       display: block;
     }
     .stat-card strong {
-      font-size: 18px;
+      font-size: 17px;
       font-weight: 800;
       color: #0f172a;
+    }
+    .lives-box {
+      font-size: 18px;
+      letter-spacing: 2px;
     }
 
     /* DROPPER ROW */
@@ -188,7 +197,7 @@
       height: 72px;
       display: flex;
       position: relative;
-      margin-top: 10px;
+      margin-top: 8px;
     }
     .dropper-slot {
       flex: 1;
@@ -210,14 +219,14 @@
       color: #ffffff;
       box-shadow: 0 10px 25px -4px rgba(0, 0, 0, 0.2);
       pointer-events: none;
-      transition: all 0.12s ease;
+      transition: all 0.16s ease;
     }
 
     /* BOARD FRAME */
     #board-frame {
       width: 100%;
       max-width: 360px;
-      height: 64vh;
+      height: 62vh;
       background: rgba(255, 255, 255, 0.85);
       backdrop-filter: blur(12px);
       border: 1.5px solid rgba(255, 255, 255, 0.8);
@@ -227,7 +236,7 @@
       gap: 6px;
       padding: 8px;
       box-shadow: var(--shadow);
-      margin: auto 0 10px 0;
+      margin: auto 0 8px 0;
     }
     .col-track {
       display: grid;
@@ -259,26 +268,52 @@
       font-weight: 900;
       color: #ffffff;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-      animation: dropPop 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+      /* Eased slow downward entrance */
+      transition: transform 0.32s cubic-bezier(0.25, 1, 0.5, 1);
     }
-    @keyframes dropPop {
-      0% { transform: translateY(-30px) scale(0.7); opacity: 0; }
+    .tile.falling {
+      animation: smoothFall 0.32s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+    @keyframes smoothFall {
+      0% { transform: translateY(-70px) scale(0.85); opacity: 0.3; }
       100% { transform: translateY(0) scale(1); opacity: 1; }
     }
     .tile.merged {
-      animation: mergeFlash 0.22s ease-out;
+      animation: zenMerge 0.36s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
-    @keyframes mergeFlash {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.25); filter: brightness(1.2); }
+    @keyframes zenMerge {
+      0% { transform: scale(0.9); }
+      50% { transform: scale(1.22); filter: brightness(1.25); }
       100% { transform: scale(1); }
+    }
+
+    /* AD COUNTDOWN TOAST */
+    #ad-toast {
+      position: fixed;
+      top: 18px;
+      padding: 8px 16px;
+      border-radius: 20px;
+      background: rgba(15, 23, 42, 0.85);
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      backdrop-filter: blur(8px);
+      box-shadow: var(--shadow);
+      display: none;
+      z-index: 1000;
+      animation: pulseToast 1s infinite alternate;
+    }
+    @keyframes pulseToast {
+      from { transform: scale(1); }
+      to { transform: scale(1.04); }
     }
 
     /* MODALS */
     .modal {
       position: fixed;
       inset: 0;
-      background: rgba(15, 23, 42, 0.45);
+      background: rgba(15, 23, 42, 0.5);
       backdrop-filter: blur(6px);
       display: flex;
       align-items: center;
@@ -286,7 +321,7 @@
       z-index: 100;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.2s ease;
+      transition: opacity 0.25s ease;
     }
     .modal.active {
       opacity: 1;
@@ -306,12 +341,14 @@
 </head>
 <body>
 
+  <div id="ad-toast">Short Ad playing in 3s...</div>
+
   <!-- 1. HOME SCREEN -->
   <section class="screen active" id="home-screen">
     <div class="hero-section">
       <div class="hero-badge">✦ Minimal Puzzle</div>
       <h1 class="hero-title">DROP 2048</h1>
-      <p class="hero-sub">Drop • Merge • Relax</p>
+      <p class="hero-sub">Drop • Merge • 3 Lives</p>
     </div>
 
     <div class="menu-wrap">
@@ -326,6 +363,10 @@
     <header>
       <button class="icon-btn" id="pause-btn">⏸</button>
       <div class="stats-group">
+        <div class="stat-card">
+          <small>Lives</small>
+          <div class="lives-box" id="lives-display">❤️❤️❤️</div>
+        </div>
         <div class="stat-card">
           <small>Score</small>
           <strong id="score-text">0</strong>
@@ -361,9 +402,9 @@
     <div class="modal-card">
       <h2 style="font-size:22px; margin-bottom:12px; color:#0f172a;">How to Play</h2>
       <p style="font-size:13px; color:#64748b; text-align:left; line-height:1.6; margin-bottom:20px;">
-        1. <b>Tap any column:</b> The top number tile drops into that track.<br><br>
-        2. <b>Vertical & Horizontal Merges:</b> When matching numbers touch vertically or horizontally side-by-side, they merge together into their sum (2+2=4, 32+32=64).<br><br>
-        3. <b>Keep Space:</b> Don't let columns fill to the top!
+        1. <b>Drop & Match:</b> Tap any column to drop numbers. Matching neighbors merge into their sum.<br><br>
+        2. <b>3 Lives:</b> If a column overflows to the top, you lose 1 life and that lane is cleared.<br><br>
+        3. <b>Revive:</b> Watch a rewarded ad when lives reach 0 to keep your streak!
       </p>
       <button class="btn btn-main" id="close-rules-btn">Got It!</button>
     </div>
@@ -381,19 +422,124 @@
     </div>
   </div>
 
+  <!-- LIFE LOST WARNING MODAL -->
+  <div class="modal" id="life-lost-modal">
+    <div class="modal-card">
+      <h2 style="font-size:22px; color:#ef4444; margin-bottom:8px;">Column Full!</h2>
+      <p style="font-size:13px; color:#64748b; margin-bottom:16px;" id="life-lost-desc">You lost 1 life. 2 lives remaining!</p>
+      <button class="btn btn-main" id="continue-life-btn">Continue</button>
+    </div>
+  </div>
+
   <!-- GAME OVER MODAL -->
   <div class="modal" id="over-modal">
     <div class="modal-card">
       <h2 style="font-size:24px; color:#ef4444; margin-bottom:8px;">Game Over</h2>
-      <p style="font-size:13px; color:#64748b; margin-bottom:18px;">Columns reached the top!</p>
+      <p style="font-size:13px; color:#64748b; margin-bottom:18px;">All 3 lives lost!</p>
       <div style="display:flex; flex-direction:column; gap:10px;">
-        <button class="btn btn-main" id="again-btn">Play Again</button>
+        <button class="btn btn-reward" id="reward-revive-btn">📺 Watch Ad for +1 Life</button>
+        <button class="btn btn-main" id="again-btn">Start Over</button>
         <button class="btn btn-sub" id="over-home-btn">Main Menu</button>
       </div>
     </div>
   </div>
 
   <script>
+    // --- ADMOB BRIDGE CONTROLLER ---
+    const AdMobManager = {
+      initialized: false,
+      timerInterval: null,
+      continuousSeconds: 0,
+      bannerId: 'ca-app-pub-3940256099942544/6300978111',       // Official Google Test Banner
+      interstitialId: 'ca-app-pub-3940256099942544/1033173712', // Official Google Test Interstitial
+      rewardedId: 'ca-app-pub-3940256099942544/5224354917',     // Official Google Test Rewarded
+
+      async init() {
+        if (window.Capacitor && window.Capacitor.isPluginAvailable('AdMob')) {
+          try {
+            const { AdMob } = window.Capacitor.Plugins;
+            await AdMob.initialize({ initializeForTesting: true });
+            this.initialized = true;
+            this.showBanner();
+            this.prepareInterstitial();
+          } catch(e) {
+            console.log("AdMob native init skipped (running in standard webview):", e);
+          }
+        }
+      },
+
+      async showBanner() {
+        if (!this.initialized) return;
+        try {
+          const { AdMob, BannerAdPosition, BannerAdSize } = window.Capacitor.Plugins;
+          await AdMob.showBanner({
+            adId: this.bannerId,
+            adSize: BannerAdSize.BANNER,
+            position: BannerAdPosition.BOTTOM_CENTER,
+            margin: 0,
+            isTesting: true
+          });
+        } catch(e) {}
+      },
+
+      async prepareInterstitial() {
+        if (!this.initialized) return;
+        try {
+          const { AdMob } = window.Capacitor.Plugins;
+          await AdMob.prepareInterstitial({ adId: this.interstitialId, isTesting: true });
+        } catch(e) {}
+      },
+
+      async showInterstitial() {
+        if (!this.initialized) return;
+        try {
+          const { AdMob } = window.Capacitor.Plugins;
+          await AdMob.showInterstitial();
+          this.prepareInterstitial(); // Pre-load next
+        } catch(e) {}
+      },
+
+      async showRewarded(onRewardCallback) {
+        if (!this.initialized) {
+          // Simulation for test/fallback
+          setTimeout(onRewardCallback, 1000);
+          return;
+        }
+        try {
+          const { AdMob } = window.Capacitor.Plugins;
+          await AdMob.prepareRewardVideoAd({ adId: this.rewardedId, isTesting: true });
+          const reward = await AdMob.showRewardVideoAd();
+          if (reward) onRewardCallback();
+        } catch(e) {
+          onRewardCallback();
+        }
+      },
+
+      startLoopTimer() {
+        clearInterval(this.timerInterval);
+        this.continuousSeconds = 0;
+        this.timerInterval = setInterval(() => {
+          this.continuousSeconds++;
+          // Trigger Ad between 120 and 150 seconds (at 135 seconds)
+          if (this.continuousSeconds === 132) {
+            const toast = document.getElementById('ad-toast');
+            toast.style.display = 'block';
+          }
+          if (this.continuousSeconds >= 135) {
+            this.continuousSeconds = 0;
+            const toast = document.getElementById('ad-toast');
+            toast.style.display = 'none';
+            this.showInterstitial();
+          }
+        }, 1000);
+      },
+
+      pauseLoopTimer() {
+        clearInterval(this.timerInterval);
+      }
+    };
+
+    // --- GAME ENGINE ---
     const PALETTE = {
       2:    { bg: '#3b82f6', text: '#ffffff' },
       4:    { bg: '#06b6d4', text: '#ffffff' },
@@ -424,14 +570,14 @@
         try {
           const osc = this.ctx.createOscillator();
           const gain = this.ctx.createGain();
-          osc.frequency.setValueAtTime(420, this.ctx.currentTime);
-          osc.frequency.exponentialRampToValueAtTime(180, this.ctx.currentTime + 0.08);
-          gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.08);
+          osc.frequency.setValueAtTime(380, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(160, this.ctx.currentTime + 0.12);
+          gain.gain.setValueAtTime(0.14, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.12);
           osc.connect(gain);
           gain.connect(this.ctx.destination);
           osc.start();
-          osc.stop(this.ctx.currentTime + 0.08);
+          osc.stop(this.ctx.currentTime + 0.12);
         } catch(e) {}
       },
       merge(val) {
@@ -440,25 +586,25 @@
         try {
           const osc = this.ctx.createOscillator();
           const gain = this.ctx.createGain();
-          const p = 300 + Math.min(Math.log2(val || 2) * 60, 600);
+          const p = 300 + Math.min(Math.log2(val || 2) * 50, 500);
           osc.type = 'triangle';
           osc.frequency.setValueAtTime(p, this.ctx.currentTime);
-          osc.frequency.exponentialRampToValueAtTime(p * 1.4, this.ctx.currentTime + 0.12);
-          gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.12);
+          osc.frequency.exponentialRampToValueAtTime(p * 1.35, this.ctx.currentTime + 0.18);
+          gain.gain.setValueAtTime(0.18, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.18);
           osc.connect(gain);
           gain.connect(this.ctx.destination);
           osc.start();
-          osc.stop(this.ctx.currentTime + 0.12);
+          osc.stop(this.ctx.currentTime + 0.18);
         } catch(e) {}
       }
     };
 
     const COLS = 5;
     const ROWS = 7;
-    // 2D grid: grid[r][c], r = 0 (top) to 6 (bottom)
     let board = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
     let score = 0;
+    let lives = 3;
     let highScore = parseInt(localStorage.getItem('drop2048_hi') || '0', 10);
     let nextValue = 2;
     let isProcessing = false;
@@ -466,12 +612,18 @@
     const activeBlock = document.getElementById('active-block');
     const scoreText = document.getElementById('score-text');
     const bestText = document.getElementById('best-text');
+    const livesDisplay = document.getElementById('lives-display');
     const columns = document.querySelectorAll('.col-track');
     const dropperSlots = document.querySelectorAll('.dropper-slot');
 
     bestText.innerText = highScore;
 
-    function renderBoard(mergedCell = null) {
+    function updateLivesUI() {
+      const hearts = ['🖤🖤🖤', '❤️🖤🖤', '❤️❤️🖤', '❤️❤️❤️'];
+      livesDisplay.innerText = hearts[lives] || '🖤🖤🖤';
+    }
+
+    function renderBoard(fallingCell = null, mergedCell = null) {
       columns.forEach((colEl, c) => {
         colEl.innerHTML = '';
         for (let r = 0; r < ROWS; r++) {
@@ -482,6 +634,9 @@
           if (val > 0) {
             const tile = document.createElement('div');
             tile.className = 'tile';
+            if (fallingCell && fallingCell.r === r && fallingCell.c === c) {
+              tile.classList.add('falling');
+            }
             if (mergedCell && mergedCell.r === r && mergedCell.c === c) {
               tile.classList.add('merged');
             }
@@ -499,10 +654,13 @@
     function initGame() {
       board = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
       score = 0;
+      lives = 3;
+      updateLivesUI();
       scoreText.innerText = '0';
       isProcessing = false;
       rollNextValue();
       renderBoard();
+      AdMobManager.startLoopTimer();
     }
 
     function rollNextValue() {
@@ -520,7 +678,7 @@
     function dropIntoColumn(col) {
       if (isProcessing) return;
 
-      // Find lowest empty row in this column
+      // Find lowest empty row in column
       let targetRow = -1;
       for (let r = ROWS - 1; r >= 0; r--) {
         if (board[r][col] === 0) {
@@ -529,29 +687,50 @@
         }
       }
 
-      if (targetRow === -1) return; // Column full
+      // Column overflow: lose a life
+      if (targetRow === -1) {
+        handleLifeLoss(col);
+        return;
+      }
 
       isProcessing = true;
       Sound.drop();
 
       board[targetRow][col] = nextValue;
-      renderBoard();
+      renderBoard({ r: targetRow, c: col });
       rollNextValue();
 
+      // Relaxed 300ms pause to comfortably see block land before merges start
       setTimeout(() => {
         resolveFullBoard(targetRow, col, () => {
           isProcessing = false;
-          checkGameOver();
+          checkOverflow();
         });
-      }, 120);
+      }, 300);
     }
 
-    // Comprehensive 2D Resolution: Vertical + Horizontal + Gravity
+    function handleLifeLoss(col) {
+      lives--;
+      updateLivesUI();
+      AdMobManager.showInterstitial();
+
+      if (lives > 0) {
+        // Clear that single overflown column to allow continued play
+        for (let r = 0; r < ROWS; r++) board[r][col] = 0;
+        renderBoard();
+        document.getElementById('life-lost-desc').innerText = `You lost 1 life. ${lives} ${lives === 1 ? 'life' : 'lives'} remaining!`;
+        document.getElementById('life-lost-modal').classList.add('active');
+      } else {
+        document.getElementById('over-modal').classList.add('active');
+        AdMobManager.pauseLoopTimer();
+      }
+    }
+
     function resolveFullBoard(lastR, lastC, callback) {
       let didMerge = false;
       let targetMergeCell = null;
 
-      // 1. Check Vertical Merge (Bottom match)
+      // 1. Vertical Merge Check
       for (let r = ROWS - 2; r >= 0; r--) {
         for (let c = 0; c < COLS; c++) {
           if (board[r][c] > 0 && board[r][c] === board[r + 1][c]) {
@@ -567,13 +746,12 @@
         if (didMerge) break;
       }
 
-      // 2. Check Horizontal Merge (Left/Right match) if no vertical merge occurred
+      // 2. Horizontal Merge Check
       if (!didMerge) {
         for (let r = ROWS - 1; r >= 0; r--) {
           for (let c = 0; c < COLS - 1; c++) {
             if (board[r][c] > 0 && board[r][c] === board[r][c + 1]) {
               const newVal = board[r][c] * 2;
-              // Merge into the tile closer to the last interaction, or the right one
               const targetCol = (c === lastC) ? c : c + 1;
               const sourceCol = (targetCol === c) ? c + 1 : c;
 
@@ -589,12 +767,11 @@
         }
       }
 
-      // 3. Apply Gravity downward to any floating blocks
+      // 3. Gravity Check
       let didDrop = false;
       for (let c = 0; c < COLS; c++) {
         for (let r = ROWS - 1; r > 0; r--) {
           if (board[r][c] === 0) {
-            // Find tile above to pull down
             for (let k = r - 1; k >= 0; k--) {
               if (board[k][c] > 0) {
                 board[r][c] = board[k][c];
@@ -608,8 +785,9 @@
       }
 
       if (didMerge || didDrop) {
-        renderBoard(targetMergeCell);
-        setTimeout(() => resolveFullBoard(targetMergeCell ? targetMergeCell.r : lastR, targetMergeCell ? targetMergeCell.c : lastC, callback), 140);
+        renderBoard(null, targetMergeCell);
+        // Comfortable 260ms pacing between chain reactions
+        setTimeout(() => resolveFullBoard(targetMergeCell ? targetMergeCell.r : lastR, targetMergeCell ? targetMergeCell.c : lastC, callback), 260);
       } else {
         callback();
       }
@@ -626,13 +804,13 @@
       Sound.merge(newVal);
     }
 
-    function checkGameOver() {
-      let isFull = true;
+    function checkOverflow() {
+      let fullCols = 0;
       for (let c = 0; c < COLS; c++) {
-        if (board[0][c] === 0) isFull = false;
+        if (board[0][c] > 0) fullCols++;
       }
-      if (isFull) {
-        document.getElementById('over-modal').classList.add('active');
+      if (fullCols >= COLS) {
+        handleLifeLoss(2);
       }
     }
 
@@ -663,8 +841,10 @@
       document.getElementById(id).classList.add('active');
     }
 
+    // UI BUTTONS
     document.getElementById('start-btn').onclick = () => {
       Sound.init();
+      AdMobManager.init();
       showScreen('game-screen');
       initGame();
     };
@@ -676,15 +856,41 @@
       e.target.innerText = Sound.muted ? '🔈 Sound: OFF' : '🔊 Sound: ON';
     };
 
-    document.getElementById('pause-btn').onclick = () => document.getElementById('pause-modal').classList.add('active');
-    document.getElementById('resume-btn').onclick = () => document.getElementById('pause-modal').classList.remove('active');
+    document.getElementById('pause-btn').onclick = () => {
+      AdMobManager.pauseLoopTimer();
+      document.getElementById('pause-modal').classList.add('active');
+    };
+    document.getElementById('resume-btn').onclick = () => {
+      AdMobManager.startLoopTimer();
+      document.getElementById('pause-modal').classList.remove('active');
+    };
     document.getElementById('restart-btn').onclick = () => {
       document.getElementById('pause-modal').classList.remove('active');
       initGame();
     };
     document.getElementById('home-btn').onclick = () => {
+      AdMobManager.pauseLoopTimer();
       document.getElementById('pause-modal').classList.remove('active');
       showScreen('home-screen');
+    };
+
+    document.getElementById('continue-life-btn').onclick = () => {
+      document.getElementById('life-lost-modal').classList.remove('active');
+    };
+
+    // Rewarded Ad Revive
+    document.getElementById('reward-revive-btn').onclick = () => {
+      AdMobManager.showRewarded(() => {
+        lives = 1;
+        updateLivesUI();
+        // Clear top rows to give room
+        for (let r = 0; r < 2; r++) {
+          for (let c = 0; c < COLS; c++) board[r][c] = 0;
+        }
+        renderBoard();
+        document.getElementById('over-modal').classList.remove('active');
+        AdMobManager.startLoopTimer();
+      });
     };
 
     document.getElementById('again-btn').onclick = () => {
