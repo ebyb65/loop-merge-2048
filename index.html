@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Drop 2048: Minimal</title>
+  <title>Drop 2048</title>
   <style>
     :root {
-      --bg: #0d0f14;
-      --panel: #161922;
-      --border: rgba(255, 255, 255, 0.08);
+      --bg: #0f1118;
+      --card-bg: #181a24;
+      --border-color: rgba(255, 255, 255, 0.08);
       --accent: #ff4757;
     }
     * {
@@ -21,17 +21,18 @@
     }
     body {
       background-color: var(--bg);
-      color: #f8fafc;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       overflow: hidden;
+      height: 100vh;
+      width: 100vw;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      height: 100vh;
-      width: 100vw;
     }
 
+    /* SCREEN ROUTING */
     .screen {
       position: absolute;
       inset: 0;
@@ -39,53 +40,42 @@
       flex-direction: column;
       align-items: center;
       justify-content: space-between;
-      padding: env(safe-area-inset-top, 24px) 20px env(safe-area-inset-bottom, 24px) 20px;
-      transition: opacity 0.25s ease, transform 0.25s ease;
+      padding: env(safe-area-inset-top, 20px) 16px env(safe-area-inset-bottom, 20px) 16px;
       opacity: 0;
       pointer-events: none;
-      transform: scale(0.97);
+      transition: opacity 0.2s ease;
     }
     .screen.active {
       opacity: 1;
       pointer-events: auto;
-      transform: scale(1);
     }
 
     /* HOME SCREEN */
-    .hero-area {
+    .hero-box {
       text-align: center;
       margin-top: 14vh;
     }
-    .hero-badge {
+    .badge {
       display: inline-block;
       font-size: 11px;
-      font-weight: 700;
+      font-weight: 800;
       letter-spacing: 2px;
-      text-transform: uppercase;
       padding: 6px 14px;
-      border-radius: 999px;
-      background: rgba(255, 71, 87, 0.12);
+      border-radius: 20px;
+      background: rgba(255, 71, 87, 0.15);
       color: #ff6b81;
       border: 1px solid rgba(255, 71, 87, 0.3);
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
-    .hero-title {
+    .hero-box h1 {
       font-size: 46px;
       font-weight: 900;
       letter-spacing: -1px;
-      line-height: 1;
-      background: linear-gradient(180deg, #ffffff 30%, #94a3b8 100%);
+      background: linear-gradient(180deg, #fff 40%, #94a3b8);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
-    .hero-sub {
-      color: #64748b;
-      font-size: 13px;
-      margin-top: 10px;
-      font-weight: 500;
-    }
-
-    .menu-group {
+    .menu-wrap {
       width: 100%;
       max-width: 300px;
       display: flex;
@@ -97,27 +87,26 @@
       width: 100%;
       padding: 16px;
       border-radius: 18px;
-      font-size: 15px;
-      font-weight: 700;
+      font-size: 16px;
+      font-weight: 800;
       border: none;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
-      transition: transform 0.1s ease, filter 0.1s ease;
     }
     .btn:active {
       transform: scale(0.97);
     }
-    .btn-primary {
+    .btn-main {
       background: #ff4757;
-      color: #ffffff;
-      box-shadow: 0 10px 25px rgba(255, 71, 87, 0.35);
+      color: #fff;
+      box-shadow: 0 8px 25px rgba(255, 71, 87, 0.4);
     }
-    .btn-outline {
-      background: var(--panel);
-      border: 1px solid var(--border);
+    .btn-sub {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
       color: #cbd5e1;
     }
 
@@ -128,38 +117,14 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-top: 4px;
-    }
-    .stats-wrap {
-      display: flex;
-      gap: 8px;
-    }
-    .stat-box {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      padding: 6px 14px;
-      border-radius: 14px;
-      min-width: 76px;
-      text-align: center;
-    }
-    .stat-label {
-      font-size: 9px;
-      text-transform: uppercase;
-      font-weight: 700;
-      letter-spacing: 1px;
-      color: #64748b;
-    }
-    .stat-val {
-      font-size: 17px;
-      font-weight: 800;
-      color: #f1f5f9;
+      margin-top: 6px;
     }
     .icon-btn {
-      width: 42px;
-      height: 42px;
+      width: 44px;
+      height: 44px;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
       border-radius: 14px;
-      background: var(--panel);
-      border: 1px solid var(--border);
       color: #cbd5e1;
       font-size: 18px;
       display: flex;
@@ -167,58 +132,125 @@
       justify-content: center;
       cursor: pointer;
     }
+    .stats-group {
+      display: flex;
+      gap: 8px;
+    }
+    .stat-pill {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 6px 14px;
+      min-width: 76px;
+      text-align: center;
+    }
+    .stat-pill small {
+      font-size: 9px;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: #64748b;
+      display: block;
+    }
+    .stat-pill strong {
+      font-size: 18px;
+      font-weight: 800;
+    }
 
-    /* DROPPER STAGING AREA */
-    #dropper-container {
+    /* DROPPER ROW */
+    #dropper-strip {
       width: 100%;
       max-width: 360px;
       height: 70px;
       position: relative;
+      margin-top: 10px;
+      display: flex;
+    }
+    .dropper-slot {
+      flex: 1;
+      height: 100%;
       display: flex;
       align-items: center;
-      margin: 10px 0 6px 0;
+      justify-content: center;
+      cursor: pointer;
     }
-    #next-preview {
-      position: absolute;
+    #active-block {
       width: 58px;
       height: 58px;
       border-radius: 16px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 20px;
+      font-size: 22px;
       font-weight: 900;
-      color: #fff;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.5);
-      transition: left 0.08s cubic-bezier(0.2, 0, 0.2, 1);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      transition: all 0.12s ease;
       pointer-events: none;
     }
 
-    /* CANVAS VIEWPORT */
-    #canvas-card {
-      position: relative;
+    /* MAIN BOARD - CSS GRID */
+    #board-frame {
       width: 100%;
       max-width: 360px;
-      aspect-ratio: 5 / 7.2;
+      height: 64vh;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
       border-radius: 22px;
-      background: var(--panel);
-      border: 1px solid var(--border);
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+      padding: 8px;
       box-shadow: 0 16px 40px rgba(0,0,0,0.6);
-      overflow: hidden;
       margin: auto 0 10px 0;
     }
-    canvas {
+    .column {
+      display: grid;
+      grid-template-rows: repeat(7, 1fr);
+      gap: 6px;
+      position: relative;
+      background: rgba(255, 255, 255, 0.02);
+      border-radius: 12px;
+    }
+    .cell-slot {
       width: 100%;
       height: 100%;
-      display: block;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.03);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .tile {
+      width: 100%;
+      height: 100%;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: 900;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+      animation: popIn 0.16s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes popIn {
+      0% { transform: scale(0.4); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .tile.merged {
+      animation: pulseMerge 0.22s ease;
+    }
+    @keyframes pulseMerge {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.28); }
+      100% { transform: scale(1); }
     }
 
     /* MODALS */
     .modal {
       position: fixed;
       inset: 0;
-      background: rgba(13, 15, 20, 0.85);
-      backdrop-filter: blur(10px);
+      background: rgba(10, 12, 18, 0.88);
+      backdrop-filter: blur(8px);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -232,30 +264,14 @@
       pointer-events: auto;
     }
     .modal-box {
-      background: #191c26;
-      border: 1px solid var(--border);
-      border-radius: 26px;
+      background: #1e212d;
+      border: 1px solid var(--border-color);
+      border-radius: 24px;
       width: 86%;
       max-width: 320px;
-      padding: 26px 22px;
+      padding: 24px;
       text-align: center;
       box-shadow: 0 20px 50px rgba(0,0,0,0.7);
-    }
-    .modal-box h2 {
-      font-size: 24px;
-      font-weight: 900;
-      letter-spacing: -0.5px;
-      margin-bottom: 12px;
-    }
-    .guide-body {
-      font-size: 13px;
-      color: #94a3b8;
-      text-align: left;
-      line-height: 1.6;
-      margin-bottom: 22px;
-    }
-    .guide-body b {
-      color: #f1f5f9;
     }
   </style>
 </head>
@@ -263,16 +279,16 @@
 
   <!-- 1. HOME SCREEN -->
   <section class="screen active" id="home-screen">
-    <div class="hero-area">
-      <div class="hero-badge">Physics Puzzle</div>
-      <h1 class="hero-title">DROP 2048</h1>
-      <p class="hero-sub">Drop • Merge • Reach 2048</p>
+    <div class="hero-box">
+      <div class="badge">PHYSICS MERGE</div>
+      <h1>DROP 2048</h1>
+      <p style="color:#64748b; font-size:13px; margin-top:8px;">Tap, Drop & Connect</p>
     </div>
 
-    <div class="menu-group">
-      <button class="btn btn-primary" id="start-game-btn">▶ Play Game</button>
-      <button class="btn btn-outline" id="rules-btn">How to Play</button>
-      <button class="btn btn-outline" id="sound-btn">🔊 Sound: ON</button>
+    <div class="menu-wrap">
+      <button class="btn btn-main" id="start-btn">▶ Play Game</button>
+      <button class="btn btn-sub" id="rules-btn">How to Play</button>
+      <button class="btn btn-sub" id="sound-btn">🔊 Sound: ON</button>
     </div>
   </section>
 
@@ -280,49 +296,58 @@
   <section class="screen" id="game-screen">
     <header>
       <button class="icon-btn" id="pause-btn">⏸</button>
-      <div class="stats-wrap">
-        <div class="stat-box">
-          <div class="stat-label">Score</div>
-          <div class="stat-val" id="score-text">0</div>
+      <div class="stats-group">
+        <div class="stat-pill">
+          <small>Score</small>
+          <strong id="score-text">0</strong>
         </div>
-        <div class="stat-box">
-          <div class="stat-label">Best</div>
-          <div class="stat-val" id="best-text">0</div>
+        <div class="stat-pill">
+          <small>Best</small>
+          <strong id="best-text">0</strong>
         </div>
       </div>
     </header>
 
-    <div id="dropper-container">
-      <div id="next-preview">2</div>
+    <div id="dropper-strip">
+      <div class="dropper-slot" data-col="0"></div>
+      <div class="dropper-slot" data-col="1"></div>
+      <div class="dropper-slot" data-col="2">
+        <div id="active-block">2</div>
+      </div>
+      <div class="dropper-slot" data-col="3"></div>
+      <div class="dropper-slot" data-col="4"></div>
     </div>
 
-    <div id="canvas-card">
-      <canvas id="gameCanvas"></canvas>
+    <div id="board-frame">
+      <div class="column" data-col="0"></div>
+      <div class="column" data-col="1"></div>
+      <div class="column" data-col="2"></div>
+      <div class="column" data-col="3"></div>
+      <div class="column" data-col="4"></div>
     </div>
   </section>
 
   <!-- HOW TO PLAY MODAL -->
   <div class="modal" id="rules-modal">
     <div class="modal-box">
-      <h2>How to Play</h2>
-      <div class="guide-body">
-        1. <b>Tap or swipe:</b> Choose any lane to drop the number block.<br><br>
-        2. <b>Smooth Physics:</b> Watch blocks accelerate and drop down.<br><br>
-        3. <b>Instant Merge:</b> When two matching numbers collide, they collapse into one higher block (2+2=4, 4+4=8).<br><br>
-        4. <b>Overfill:</b> Don't let the blocks reach the top danger line!
-      </div>
-      <button class="btn btn-primary" id="close-rules-btn">Start Playing</button>
+      <h2 style="margin-bottom:12px;">How to Play</h2>
+      <p style="font-size:13px; color:#94a3b8; text-align:left; line-height:1.6; margin-bottom:20px;">
+        1. <b>Tap any column:</b> The top number drops into that lane.<br><br>
+        2. <b>Merge Numbers:</b> When the same numbers touch vertically, they combine into their double (2+2=4, 4+4=8).<br><br>
+        3. <b>Don't Overflow:</b> If blocks touch the top line, it's game over!
+      </p>
+      <button class="btn btn-main" id="close-rules-btn">Got It!</button>
     </div>
   </div>
 
   <!-- PAUSE MODAL -->
   <div class="modal" id="pause-modal">
     <div class="modal-box">
-      <h2>Game Paused</h2>
-      <div style="display:flex; flex-direction:column; gap:10px; margin-top:16px;">
-        <button class="btn btn-primary" id="resume-btn">Resume</button>
-        <button class="btn btn-outline" id="restart-pause-btn">Restart</button>
-        <button class="btn btn-outline" id="home-pause-btn">Main Menu</button>
+      <h2 style="margin-bottom:16px;">Game Paused</h2>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <button class="btn btn-main" id="resume-btn">Resume</button>
+        <button class="btn btn-sub" id="restart-btn">Restart Game</button>
+        <button class="btn btn-sub" id="home-btn">Main Menu</button>
       </div>
     </div>
   </div>
@@ -330,34 +355,33 @@
   <!-- GAME OVER MODAL -->
   <div class="modal" id="over-modal">
     <div class="modal-box">
-      <h2 style="color: #ff4757;">Game Over</h2>
-      <p style="font-size:13px; color:#94a3b8; margin-bottom:18px;">The board reached the top!</p>
+      <h2 style="color:#ff4757; margin-bottom:8px;">Game Over</h2>
+      <p style="font-size:13px; color:#94a3b8; margin-bottom:16px;">Lanes are full!</p>
       <div style="display:flex; flex-direction:column; gap:10px;">
-        <button class="btn btn-primary" id="again-btn">Play Again</button>
-        <button class="btn btn-outline" id="home-over-btn">Main Menu</button>
+        <button class="btn btn-main" id="again-btn">Play Again</button>
+        <button class="btn btn-sub" id="over-home-btn">Main Menu</button>
       </div>
     </div>
   </div>
 
   <script>
-    // --- HIGH IMPACT MINIMAL COLOR PALETTE ---
+    // --- VIBRANT PALETTE ---
     const PALETTE = {
-      2:    { bg: '#38bdf8', text: '#082f49' }, // Cyan
-      4:    { bg: '#34d399', text: '#022c22' }, // Mint Emerald
-      8:    { bg: '#facc15', text: '#422006' }, // Amber
-      16:   { bg: '#fb923c', text: '#431407' }, // Coral Orange
-      32:   { bg: '#f87171', text: '#450a0a' }, // Salmon Red
-      64:   { bg: '#e879f9', text: '#4a044e' }, // Neon Violet
-      128:  { bg: '#a855f7', text: '#ffffff' }, // Purple
-      256:  { bg: '#6366f1', text: '#ffffff' }, // Indigo
-      512:  { bg: '#3b82f6', text: '#ffffff' }, // Blue
-      1024: { bg: '#10b981', text: '#ffffff' }, // Deep Mint
-      2048: { bg: '#ff4757', text: '#ffffff' }, // Electric Ruby
-      4096: { bg: '#fbbf24', text: '#000000' }
+      2:    { bg: '#38bdf8', text: '#082f49' },
+      4:    { bg: '#34d399', text: '#022c22' },
+      8:    { bg: '#facc15', text: '#422006' },
+      16:   { bg: '#fb923c', text: '#431407' },
+      32:   { bg: '#f87171', text: '#450a0a' },
+      64:   { bg: '#e879f9', text: '#4a044e' },
+      128:  { bg: '#a855f7', text: '#ffffff' },
+      256:  { bg: '#6366f1', text: '#ffffff' },
+      512:  { bg: '#3b82f6', text: '#ffffff' },
+      1024: { bg: '#10b981', text: '#ffffff' },
+      2048: { bg: '#ff4757', text: '#ffffff' }
     };
 
-    // --- SYNTHESIZED SOUNDS ---
-    const AudioFX = {
+    // --- AUDIO SYSTEM ---
+    const Sound = {
       ctx: null,
       muted: false,
       init() {
@@ -367,480 +391,203 @@
         }
         if (this.ctx.state === 'suspended') this.ctx.resume();
       },
-      playDrop() {
+      drop() {
         if (this.muted) return;
         this.init();
         try {
           const osc = this.ctx.createOscillator();
           const gain = this.ctx.createGain();
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(380, this.ctx.currentTime);
-          osc.frequency.exponentialRampToValueAtTime(160, this.ctx.currentTime + 0.1);
+          osc.frequency.setValueAtTime(360, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(160, this.ctx.currentTime + 0.08);
           gain.gain.setValueAtTime(0.18, this.ctx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.1);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.08);
           osc.connect(gain);
           gain.connect(this.ctx.destination);
           osc.start();
-          osc.stop(this.ctx.currentTime + 0.1);
+          osc.stop(this.ctx.currentTime + 0.08);
         } catch(e) {}
       },
-      playMerge(val) {
+      merge(val) {
         if (this.muted) return;
         this.init();
         try {
           const osc = this.ctx.createOscillator();
           const gain = this.ctx.createGain();
-          const baseFreq = 260 + Math.min(Math.log2(val || 2) * 60, 600);
+          const p = 280 + Math.min(Math.log2(val || 2) * 55, 600);
           osc.type = 'triangle';
-          osc.frequency.setValueAtTime(baseFreq, this.ctx.currentTime);
-          osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.6, this.ctx.currentTime + 0.14);
-          gain.gain.setValueAtTime(0.24, this.ctx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.14);
+          osc.frequency.setValueAtTime(p, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(p * 1.5, this.ctx.currentTime + 0.12);
+          gain.gain.setValueAtTime(0.22, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.12);
           osc.connect(gain);
           gain.connect(this.ctx.destination);
           osc.start();
-          osc.stop(this.ctx.currentTime + 0.14);
+          osc.stop(this.ctx.currentTime + 0.12);
         } catch(e) {}
       }
     };
 
-    // --- GAME ENGINE & ANIMATION SYSTEM ---
+    // --- GAME ENGINE ---
     const COLS = 5;
     const ROWS = 7;
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    const scoreText = document.getElementById('score-text');
-    const bestText = document.getElementById('best-text');
-    const nextPreview = document.getElementById('next-preview');
-    const dropperContainer = document.getElementById('dropper-container');
-
-    let grid = [];
-    let activeFallingBlock = null; // Animating drop block
-    let mergingAnimations = [];    // Squash & stretch pulse animations
-    let floatingTexts = [];        // Score popup bubbles
-    let particles = [];            // Color burst particles
-
+    let grid = Array.from({ length: COLS }, () => []);
     let score = 0;
     let highScore = parseInt(localStorage.getItem('drop2048_hi') || '0', 10);
-    bestText.innerText = highScore;
-
-    let selectedCol = 2;
     let nextValue = 2;
     let isProcessing = false;
 
+    const activeBlock = document.getElementById('active-block');
+    const scoreText = document.getElementById('score-text');
+    const bestText = document.getElementById('best-text');
+    const columns = document.querySelectorAll('.column');
+    const dropperSlots = document.querySelectorAll('.dropper-slot');
+
+    bestText.innerText = highScore;
+
+    function renderSlots() {
+      columns.forEach((colEl, c) => {
+        colEl.innerHTML = '';
+        for (let r = 0; r < ROWS; r++) {
+          const slot = document.createElement('div');
+          slot.className = 'cell-slot';
+          
+          // Row calculation from bottom up
+          const tileIdx = (ROWS - 1) - r;
+          const val = grid[c][tileIdx];
+
+          if (val) {
+            const tile = document.createElement('div');
+            tile.className = 'tile';
+            tile.innerText = val;
+            const colors = PALETTE[val] || PALETTE[2];
+            tile.style.backgroundColor = colors.bg;
+            tile.style.color = colors.text;
+            slot.appendChild(tile);
+          }
+          colEl.appendChild(slot);
+        }
+      });
+    }
+
     function initGame() {
-      grid = Array.from({ length: ROWS }, () => Array(COLS).fill(null));
+      grid = Array.from({ length: COLS }, () => []);
       score = 0;
       scoreText.innerText = '0';
-      activeFallingBlock = null;
-      mergingAnimations = [];
-      floatingTexts = [];
-      particles = [];
       isProcessing = false;
       rollNextValue();
-      updatePreviewPosition();
+      renderSlots();
     }
 
     function rollNextValue() {
       const candidates = [2, 4, 8, 16, 32, 64];
-      let maxBlock = 2;
-      for (let r = 0; r < ROWS; r++) {
-        for (let c = 0; c < COLS; c++) {
-          if (grid[r][c]) maxBlock = Math.max(maxBlock, grid[r][c].value);
-        }
-      }
-      const allowed = candidates.filter(v => v <= Math.max(16, maxBlock / 2));
-      nextValue = allowed[Math.floor(Math.random() * allowed.length)];
+      const maxVal = Math.max(2, ...grid.flat());
+      const choices = candidates.filter(v => v <= Math.max(16, maxVal / 2));
+      nextValue = choices[Math.floor(Math.random() * choices.length)];
 
-      const colorData = PALETTE[nextValue] || PALETTE[2];
-      nextPreview.innerText = nextValue;
-      nextPreview.style.backgroundColor = colorData.bg;
-      nextPreview.style.color = colorData.text;
+      activeBlock.innerText = nextValue;
+      const c = PALETTE[nextValue] || PALETTE[2];
+      activeBlock.style.backgroundColor = c.bg;
+      activeBlock.style.color = c.text;
     }
 
-    function updatePreviewPosition() {
-      const w = dropperContainer.clientWidth;
-      const colWidth = w / COLS;
-      const px = selectedCol * colWidth + (colWidth - 58) / 2;
-      nextPreview.style.left = `${px}px`;
+    function dropIntoColumn(col) {
+      if (isProcessing) return;
+      if (grid[col].length >= ROWS) return; // Column full
+
+      isProcessing = true;
+      Sound.drop();
+
+      // Push block into column
+      grid[col].push(nextValue);
+      renderSlots();
+
+      rollNextValue();
+
+      setTimeout(() => {
+        resolveColumn(col, () => {
+          isProcessing = false;
+          checkGameOver();
+        });
+      }, 100);
     }
 
-    function triggerDrop(col) {
-      if (isProcessing || activeFallingBlock) return;
+    function resolveColumn(col, callback) {
+      const arr = grid[col];
+      let didMerge = false;
 
-      // Find resting row
-      let targetRow = -1;
-      for (let r = ROWS - 1; r >= 0; r--) {
-        if (!grid[r][col]) {
-          targetRow = r;
+      // Check adjacent vertical matches
+      for (let i = 0; i < arr.length - 1; i++) {
+        if (arr[i] === arr[i + 1]) {
+          const mergedVal = arr[i] * 2;
+          arr[i] = mergedVal;
+          arr.splice(i + 1, 1);
+          didMerge = true;
+
+          score += mergedVal;
+          scoreText.innerText = score;
+          if (score > highScore) {
+            highScore = score;
+            localStorage.setItem('drop2048_hi', highScore);
+            bestText.innerText = highScore;
+          }
+
+          Sound.merge(mergedVal);
           break;
         }
       }
 
-      if (targetRow === -1) {
-        // Lane is packed to the top
-        return;
-      }
-
-      isProcessing = true;
-      AudioFX.playDrop();
-
-      // Launch dynamic animated falling block
-      activeFallingBlock = {
-        col: col,
-        targetRow: targetRow,
-        currentY: -1, // Start slightly above canvas
-        speed: 0.15,  // Acceleration velocity
-        value: nextValue
-      };
-
-      rollNextValue();
-    }
-
-    // Step physics & resolves
-    function updatePhysics() {
-      // 1. Falling Block Motion
-      if (activeFallingBlock) {
-        activeFallingBlock.speed += 0.055; // gravity acceleration
-        activeFallingBlock.currentY += activeFallingBlock.speed;
-
-        if (activeFallingBlock.currentY >= activeFallingBlock.targetRow) {
-          const r = activeFallingBlock.targetRow;
-          const c = activeFallingBlock.col;
-          const val = activeFallingBlock.value;
-
-          grid[r][c] = {
-            value: val,
-            scaleX: 1.25, // Squash upon landing
-            scaleY: 0.8
-          };
-
-          activeFallingBlock = null;
-          resolveMerges();
-        }
-      }
-
-      // 2. Squash & Stretch recovery
-      for (let r = 0; r < ROWS; r++) {
-        for (let c = 0; c < COLS; c++) {
-          const cell = grid[r][c];
-          if (cell) {
-            cell.scaleX += (1 - cell.scaleX) * 0.2;
-            cell.scaleY += (1 - cell.scaleY) * 0.2;
-          }
-        }
-      }
-
-      // 3. Floating score popups
-      for (let i = floatingTexts.length - 1; i >= 0; i--) {
-        const ft = floatingTexts[i];
-        ft.y -= 1.8;
-        ft.alpha -= 0.03;
-        if (ft.alpha <= 0) floatingTexts.splice(i, 1);
-      }
-
-      // 4. Spark particles
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i];
-        p.x += p.vx;
-        p.y += p.vy;
-        p.vy += 0.2; // gravity
-        p.alpha -= 0.03;
-        if (p.alpha <= 0) particles.splice(i, 1);
-      }
-    }
-
-    function resolveMerges() {
-      let merged = false;
-
-      // Bottom-up check
-      for (let r = ROWS - 1; r >= 0; r--) {
-        for (let c = 0; c < COLS; c++) {
-          if (!grid[r][c]) continue;
-          const val = grid[r][c].value;
-
-          // Check bottom neighbor
-          if (r + 1 < ROWS && grid[r + 1][c] && grid[r + 1][c].value === val) {
-            mergeInto(r + 1, c, r, c);
-            merged = true;
-            break;
-          }
-          // Check left neighbor
-          if (c > 0 && grid[r][c - 1] && grid[r][c - 1].value === val) {
-            mergeInto(r, c - 1, r, c);
-            merged = true;
-            break;
-          }
-          // Check right neighbor
-          if (c + 1 < COLS && grid[r][c + 1] && grid[r][c + 1].value === val) {
-            mergeInto(r, c + 1, r, c);
-            merged = true;
-            break;
-          }
-        }
-        if (merged) break;
-      }
-
-      // Apply gravity to floating blocks
-      for (let c = 0; c < COLS; c++) {
-        for (let r = ROWS - 1; r > 0; r--) {
-          if (!grid[r][c] && grid[r - 1][c]) {
-            grid[r][c] = grid[r - 1][c];
-            grid[r - 1][c] = null;
-            merged = true;
-          }
-        }
-      }
-
-      if (merged) {
-        setTimeout(resolveMerges, 110);
+      if (didMerge) {
+        renderSlots();
+        setTimeout(() => resolveColumn(col, callback), 140);
       } else {
-        isProcessing = false;
-        checkGameOver();
-      }
-    }
-
-    function mergeInto(targetR, targetC, fromR, fromC) {
-      const newVal = grid[targetR][targetC].value * 2;
-      grid[targetR][targetC] = {
-        value: newVal,
-        scaleX: 1.45,
-        scaleY: 1.45
-      };
-      grid[fromR][fromC] = null;
-
-      score += newVal;
-      scoreText.innerText = score;
-      if (score > highScore) {
-        highScore = score;
-        localStorage.setItem('drop2048_hi', highScore);
-        bestText.innerText = highScore;
-      }
-
-      AudioFX.playMerge(newVal);
-
-      // Particle & Score Visuals
-      const rect = canvas.getBoundingClientRect();
-      const colW = rect.width / COLS;
-      const rowH = rect.height / ROWS;
-      const px = targetC * colW + colW / 2;
-      const py = targetR * rowH + rowH / 2;
-
-      spawnParticles(px, py, (PALETTE[newVal] || PALETTE[2]).bg);
-      floatingTexts.push({
-        text: `+${newVal}`,
-        x: px,
-        y: py - 10,
-        alpha: 1
-      });
-    }
-
-    function spawnParticles(x, y, color) {
-      for (let i = 0; i < 14; i++) {
-        const angle = Math.random() * Math.PI * 2;
-        const spd = Math.random() * 5 + 2;
-        particles.push({
-          x, y,
-          vx: Math.cos(angle) * spd,
-          vy: Math.sin(angle) * spd - 1,
-          radius: Math.random() * 3 + 2,
-          color,
-          alpha: 1
-        });
+        callback();
       }
     }
 
     function checkGameOver() {
-      let isFull = true;
+      let fullCols = 0;
       for (let c = 0; c < COLS; c++) {
-        if (!grid[0][c]) isFull = false;
+        if (grid[c].length >= ROWS) fullCols++;
       }
-      if (isFull) {
+      if (fullCols === COLS) {
         document.getElementById('over-modal').classList.add('active');
       }
     }
 
-    // --- RENDER PIPELINE ---
-    function render() {
-      updatePhysics();
-
-      const rect = canvas.getBoundingClientRect();
-      const colW = rect.width / COLS;
-      const rowH = rect.height / ROWS;
-
-      ctx.clearRect(0, 0, rect.width, rect.height);
-
-      // 1. Column Guidance lines & Selected Column Highlight
-      for (let c = 0; c < COLS; c++) {
-        if (c === selectedCol) {
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.025)';
-          ctx.fillRect(c * colW, 0, colW, rect.height);
+    // --- INTERACTION & EVENTS ---
+    function setDropperPosition(col) {
+      dropperSlots.forEach((slot, idx) => {
+        if (idx === col) {
+          slot.appendChild(activeBlock);
         }
-      }
-
-      // 2. Static Empty Slot Plates
-      for (let r = 0; r < ROWS; r++) {
-        for (let c = 0; c < COLS; c++) {
-          const x = c * colW + 4;
-          const y = r * rowH + 4;
-          const w = colW - 8;
-          const h = rowH - 8;
-
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.02)';
-          roundRect(ctx, x, y, w, h, 14);
-          ctx.fill();
-        }
-      }
-
-      // 3. Render Resting Grid Blocks
-      for (let r = 0; r < ROWS; r++) {
-        for (let c = 0; c < COLS; c++) {
-          const cell = grid[r][c];
-          if (cell) {
-            drawBlock(c * colW + colW / 2, r * rowH + rowH / 2, colW - 8, rowH - 8, cell.value, cell.scaleX, cell.scaleY);
-          }
-        }
-      }
-
-      // 4. Render Active Falling Block (with dynamic speed motion)
-      if (activeFallingBlock) {
-        const c = activeFallingBlock.col;
-        const currentY = activeFallingBlock.currentY;
-        const px = c * colW + colW / 2;
-        const py = currentY * rowH + rowH / 2;
-
-        // Motion trail
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
-        roundRect(ctx, c * colW + 6, py - 30, colW - 12, 30, 8);
-        ctx.fill();
-
-        drawBlock(px, py, colW - 8, rowH - 8, activeFallingBlock.value, 0.96, 1.04);
-      }
-
-      // 5. Render Spark Particles
-      for (const p of particles) {
-        ctx.save();
-        ctx.globalAlpha = p.alpha;
-        ctx.fillStyle = p.color;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-      }
-
-      // 6. Render Floating Score Bubbles
-      for (const ft of floatingTexts) {
-        ctx.save();
-        ctx.globalAlpha = ft.alpha;
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 16px -apple-system, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(ft.text, ft.x, ft.y);
-        ctx.restore();
-      }
-
-      requestAnimationFrame(render);
+      });
     }
 
-    function drawBlock(cx, cy, w, h, val, sx = 1, sy = 1) {
-      const info = PALETTE[val] || PALETTE[2];
+    dropperSlots.forEach(slot => {
+      slot.addEventListener('pointerdown', (e) => {
+        const col = parseInt(e.currentTarget.getAttribute('data-col'), 10);
+        setDropperPosition(col);
+        dropIntoColumn(col);
+      });
+    });
 
-      ctx.save();
-      ctx.translate(cx, cy);
-      ctx.scale(sx, sy);
+    columns.forEach(colEl => {
+      colEl.addEventListener('pointerdown', (e) => {
+        const col = parseInt(e.currentTarget.getAttribute('data-col'), 10);
+        setDropperPosition(col);
+        dropIntoColumn(col);
+      });
+    });
 
-      // Ambient Drop Shadow
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
-      ctx.shadowBlur = 10;
-      ctx.shadowOffsetY = 4;
-
-      // Card Body
-      ctx.fillStyle = info.bg;
-      roundRect(ctx, -w / 2, -h / 2, w, h, 14);
-      ctx.fill();
-
-      // Reset Shadow for Text
-      ctx.shadowColor = 'transparent';
-
-      // Inner Highlight Rim
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-      ctx.lineWidth = 1.5;
-      roundRect(ctx, -w / 2 + 1, -h / 2 + 1, w - 2, h - 2, 13);
-      ctx.stroke();
-
-      // Bold Typographic Number
-      ctx.fillStyle = info.text;
-      ctx.font = `900 ${val >= 1024 ? w * 0.3 : w * 0.36}px -apple-system, BlinkMacSystemFont, sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(val, 0, 1);
-
-      ctx.restore();
-    }
-
-    function roundRect(c, x, y, w, h, r) {
-      c.beginPath();
-      c.moveTo(x + r, y);
-      c.arcTo(x + w, y, x + w, y + h, r);
-      c.arcTo(x + w, y + h, x, y + h, r);
-      c.arcTo(x, y + h, x, y, r);
-      c.arcTo(x, y, x + w, y, r);
-      c.closePath();
-    }
-
-    // --- INTERACTION & LANE NAVIGATION ---
-    function setLaneFromPointer(clientX) {
-      const rect = canvas.getBoundingClientRect();
-      const x = clientX - rect.left;
-      const colW = rect.width / COLS;
-      const col = Math.max(0, Math.min(COLS - 1, Math.floor(x / colW)));
-      selectedCol = col;
-      updatePreviewPosition();
-    }
-
-    function onPointerStart(e) {
-      const cx = e.clientX || (e.touches && e.touches[0].clientX);
-      if (!cx) return;
-      setLaneFromPointer(cx);
-    }
-
-    function onPointerMove(e) {
-      const cx = e.clientX || (e.touches && e.touches[0].clientX);
-      if (!cx) return;
-      setLaneFromPointer(cx);
-    }
-
-    function onPointerEnd() {
-      triggerDrop(selectedCol);
-    }
-
-    canvas.addEventListener('pointerdown', onPointerStart);
-    canvas.addEventListener('pointermove', onPointerMove);
-    canvas.addEventListener('pointerup', onPointerEnd);
-
-    dropperContainer.addEventListener('pointerdown', onPointerStart);
-    dropperContainer.addEventListener('pointermove', onPointerMove);
-    dropperContainer.addEventListener('pointerup', onPointerEnd);
-
-    // Screen Management
-    function switchScreen(id) {
+    function showScreen(id) {
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
       document.getElementById(id).classList.add('active');
     }
 
-    function fitCanvas() {
-      const rect = canvas.getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      ctx.scale(dpr, dpr);
-    }
-
-    // UI Buttons
-    document.getElementById('start-game-btn').onclick = () => {
-      AudioFX.init();
-      switchScreen('game-screen');
-      fitCanvas();
+    // UI BUTTONS
+    document.getElementById('start-btn').onclick = () => {
+      Sound.init();
+      showScreen('game-screen');
       initGame();
     };
 
@@ -852,45 +599,33 @@
     };
 
     document.getElementById('sound-btn').onclick = (e) => {
-      AudioFX.muted = !AudioFX.muted;
-      e.target.innerText = AudioFX.muted ? '🔈 Sound: OFF' : '🔊 Sound: ON';
+      Sound.muted = !Sound.muted;
+      e.target.innerText = Sound.muted ? '🔈 Sound: OFF' : '🔊 Sound: ON';
     };
 
-    // Pause Modals
     document.getElementById('pause-btn').onclick = () => {
       document.getElementById('pause-modal').classList.add('active');
     };
     document.getElementById('resume-btn').onclick = () => {
       document.getElementById('pause-modal').classList.remove('active');
     };
-    document.getElementById('restart-pause-btn').onclick = () => {
+    document.getElementById('restart-btn').onclick = () => {
       document.getElementById('pause-modal').classList.remove('active');
       initGame();
     };
-    document.getElementById('home-pause-btn').onclick = () => {
+    document.getElementById('home-btn').onclick = () => {
       document.getElementById('pause-modal').classList.remove('active');
-      switchScreen('home-screen');
+      showScreen('home-screen');
     };
 
-    // Game Over Modals
     document.getElementById('again-btn').onclick = () => {
       document.getElementById('over-modal').classList.remove('active');
       initGame();
     };
-    document.getElementById('home-over-btn').onclick = () => {
+    document.getElementById('over-home-btn').onclick = () => {
       document.getElementById('over-modal').classList.remove('active');
-      switchScreen('home-screen');
+      showScreen('home-screen');
     };
-
-    window.addEventListener('resize', () => {
-      fitCanvas();
-      updatePreviewPosition();
-    });
-
-    window.addEventListener('load', () => {
-      fitCanvas();
-      requestAnimationFrame(render);
-    });
   </script>
 </body>
 </html>
