@@ -730,7 +730,7 @@
       let didMerge = false;
       let targetMergeCell = null;
 
-      // 1. Vertical Merge Check
+      // 1. Check Vertical Neighbor (Bottom match)
       for (let r = ROWS - 2; r >= 0; r--) {
         for (let c = 0; c < COLS; c++) {
           if (board[r][c] > 0 && board[r][c] === board[r + 1][c]) {
@@ -746,7 +746,7 @@
         if (didMerge) break;
       }
 
-      // 2. Horizontal Merge Check
+      // 2. Check Horizontal Neighbors (Left / Right match)
       if (!didMerge) {
         for (let r = ROWS - 1; r >= 0; r--) {
           for (let c = 0; c < COLS - 1; c++) {
@@ -767,7 +767,40 @@
         }
       }
 
-      // 3. Gravity Check
+      // 3. Check Diagonal Neighbors (Corner-to-Corner Adjacent)
+      if (!didMerge) {
+        for (let r = ROWS - 2; r >= 0; r--) {
+          for (let c = 0; c < COLS; c++) {
+            if (board[r][c] === 0) continue;
+            const currentVal = board[r][c];
+
+            // Diagonal Bottom-Right Check
+            if (c + 1 < COLS && board[r + 1][c + 1] === currentVal) {
+              const newVal = currentVal * 2;
+              board[r + 1][c + 1] = newVal; // Merge into the lower block
+              board[r][c] = 0;
+              didMerge = true;
+              targetMergeCell = { r: r + 1, c: c + 1 };
+              triggerScore(newVal);
+              break;
+            }
+
+            // Diagonal Bottom-Left Check
+            if (c - 1 >= 0 && board[r + 1][c - 1] === currentVal) {
+              const newVal = currentVal * 2;
+              board[r + 1][c - 1] = newVal; // Merge into the lower block
+              board[r][c] = 0;
+              didMerge = true;
+              targetMergeCell = { r: r + 1, c: c - 1 };
+              triggerScore(newVal);
+              break;
+            }
+          }
+          if (didMerge) break;
+        }
+      }
+
+      // 4. Pull down any floating tiles caused by horizontal or diagonal voids
       let didDrop = false;
       for (let c = 0; c < COLS; c++) {
         for (let r = ROWS - 1; r > 0; r--) {
@@ -786,13 +819,12 @@
 
       if (didMerge || didDrop) {
         renderBoard(null, targetMergeCell);
-        // Comfortable 260ms pacing between chain reactions
         setTimeout(() => resolveFullBoard(targetMergeCell ? targetMergeCell.r : lastR, targetMergeCell ? targetMergeCell.c : lastC, callback), 260);
       } else {
         callback();
       }
     }
-
+    
     function triggerScore(newVal) {
       score += newVal;
       scoreText.innerText = score;
