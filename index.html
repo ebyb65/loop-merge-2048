@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Drop 2048: Zen Edition</title>
+  <title>Drop 2048: Zen Flow</title>
   <style>
     :root {
       --bg-top: #f8fafc;
@@ -50,7 +50,7 @@
       padding: env(safe-area-inset-top, 24px) 18px env(safe-area-inset-bottom, 24px) 18px;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.25s ease, transform 0.25s ease;
+      transition: opacity 0.3s ease, transform 0.3s ease;
       transform: scale(0.98);
     }
     .screen.active {
@@ -114,7 +114,7 @@
       justify-content: center;
       gap: 8px;
       box-shadow: var(--shadow);
-      transition: transform 0.1s ease;
+      transition: transform 0.15s ease;
     }
     .btn:active {
       transform: scale(0.97);
@@ -135,7 +135,7 @@
       border: 1px solid #e2e8f0;
     }
 
-    /* GAME HEADER */
+    /* HEADER */
     header {
       width: 100%;
       max-width: 380px;
@@ -219,7 +219,7 @@
       color: #ffffff;
       box-shadow: 0 10px 25px -4px rgba(0, 0, 0, 0.2);
       pointer-events: none;
-      transition: all 0.16s ease;
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
 
     /* BOARD FRAME */
@@ -257,6 +257,8 @@
       justify-content: center;
       position: relative;
     }
+
+    /* SMOOTH ORGANIC TILE ANIMATIONS */
     .tile {
       width: 100%;
       height: 100%;
@@ -267,27 +269,74 @@
       font-size: 20px;
       font-weight: 900;
       color: #ffffff;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-      /* Eased slow downward entrance */
-      transition: transform 0.32s cubic-bezier(0.25, 1, 0.5, 1);
+      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12);
+      will-change: transform, opacity;
+      transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.3s ease;
     }
+    
+    /* Gentle downward gliding fall */
     .tile.falling {
-      animation: smoothFall 0.32s cubic-bezier(0.25, 1, 0.5, 1);
+      animation: gentleDrop 0.48s cubic-bezier(0.22, 1, 0.36, 1) forwards;
     }
-    @keyframes smoothFall {
-      0% { transform: translateY(-70px) scale(0.85); opacity: 0.3; }
-      100% { transform: translateY(0) scale(1); opacity: 1; }
-    }
-    .tile.merged {
-      animation: zenMerge 0.36s cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
-    @keyframes zenMerge {
-      0% { transform: scale(0.9); }
-      50% { transform: scale(1.22); filter: brightness(1.25); }
-      100% { transform: scale(1); }
+    @keyframes gentleDrop {
+      0% {
+        transform: translateY(-90px) scale(0.8);
+        opacity: 0.2;
+      }
+      70% {
+        transform: translateY(6px) scale(1.08, 0.92);
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(0) scale(1, 1);
+        opacity: 1;
+      }
     }
 
-    /* AD COUNTDOWN TOAST */
+    /* Target tile receiving the merge (Puff, Pulse & Shimmer) */
+    .tile.merged-target {
+      animation: organicMerge 0.52s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+      z-index: 10;
+    }
+    @keyframes organicMerge {
+      0% {
+        transform: scale(0.9);
+      }
+      40% {
+        transform: scale(1.3);
+        box-shadow: 0 0 25px rgba(255, 255, 255, 0.8), 0 10px 20px rgba(0,0,0,0.25);
+        filter: brightness(1.25);
+      }
+      75% {
+        transform: scale(0.96);
+      }
+      100% {
+        transform: scale(1);
+        filter: brightness(1);
+      }
+    }
+
+    /* Neighbor tiles getting sucked into the target */
+    .tile.absorbing {
+      animation: dissolveInward 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+      pointer-events: none;
+    }
+    @keyframes dissolveInward {
+      0% {
+        transform: scale(1);
+        opacity: 1;
+      }
+      50% {
+        transform: scale(0.6);
+        opacity: 0.6;
+      }
+      100% {
+        transform: scale(0.1);
+        opacity: 0;
+      }
+    }
+
+    /* AD TOAST */
     #ad-toast {
       position: fixed;
       top: 18px;
@@ -302,18 +351,13 @@
       box-shadow: var(--shadow);
       display: none;
       z-index: 1000;
-      animation: pulseToast 1s infinite alternate;
-    }
-    @keyframes pulseToast {
-      from { transform: scale(1); }
-      to { transform: scale(1.04); }
     }
 
     /* MODALS */
     .modal {
       position: fixed;
       inset: 0;
-      background: rgba(15, 23, 42, 0.5);
+      background: rgba(15, 23, 42, 0.45);
       backdrop-filter: blur(6px);
       display: flex;
       align-items: center;
@@ -321,7 +365,7 @@
       z-index: 100;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.25s ease;
+      transition: opacity 0.3s ease;
     }
     .modal.active {
       opacity: 1;
@@ -348,7 +392,7 @@
     <div class="hero-section">
       <div class="hero-badge">✦ Minimal Puzzle</div>
       <h1 class="hero-title">DROP 2048</h1>
-      <p class="hero-sub">Drop • Merge • 3 Lives</p>
+      <p class="hero-sub">Connect 3+ • Smooth Flow • 3 Lives</p>
     </div>
 
     <div class="menu-wrap">
@@ -402,9 +446,9 @@
     <div class="modal-card">
       <h2 style="font-size:22px; margin-bottom:12px; color:#0f172a;">How to Play</h2>
       <p style="font-size:13px; color:#64748b; text-align:left; line-height:1.6; margin-bottom:20px;">
-        1. <b>Drop & Match:</b> Tap any column to drop numbers. Matching neighbors merge into their sum.<br><br>
-        2. <b>3 Lives:</b> If a column overflows to the top, you lose 1 life and that lane is cleared.<br><br>
-        3. <b>Revive:</b> Watch a rewarded ad when lives reach 0 to keep your streak!
+        1. <b>Drop Numbers:</b> Tap any column to drop your block smoothly.<br><br>
+        2. <b>Cluster Merging (3+):</b> When 3 or more identical numbers connect in straight lines, L-Shapes, or T-Shapes (strictly vertical & horizontal, no diagonals), they smoothly merge into one higher number!<br><br>
+        3. <b>3 Lives:</b> Overfilling any column costs 1 life. Clear lanes and reach 2048!
       </p>
       <button class="btn btn-main" id="close-rules-btn">Got It!</button>
     </div>
@@ -445,14 +489,14 @@
   </div>
 
   <script>
-    // --- ADMOB BRIDGE CONTROLLER ---
+    // --- ADMOB BRIDGE ---
     const AdMobManager = {
       initialized: false,
       timerInterval: null,
       continuousSeconds: 0,
-      bannerId: 'ca-app-pub-3940256099942544/6300978111',       // Official Google Test Banner
-      interstitialId: 'ca-app-pub-3940256099942544/1033173712', // Official Google Test Interstitial
-      rewardedId: 'ca-app-pub-3940256099942544/5224354917',     // Official Google Test Rewarded
+      bannerId: 'ca-app-pub-3940256099942544/6300978111',
+      interstitialId: 'ca-app-pub-3940256099942544/1033173712',
+      rewardedId: 'ca-app-pub-3940256099942544/5224354917',
 
       async init() {
         if (window.Capacitor && window.Capacitor.isPluginAvailable('AdMob')) {
@@ -462,12 +506,9 @@
             this.initialized = true;
             this.showBanner();
             this.prepareInterstitial();
-          } catch(e) {
-            console.log("AdMob native init skipped (running in standard webview):", e);
-          }
+          } catch(e) {}
         }
       },
-
       async showBanner() {
         if (!this.initialized) return;
         try {
@@ -481,7 +522,6 @@
           });
         } catch(e) {}
       },
-
       async prepareInterstitial() {
         if (!this.initialized) return;
         try {
@@ -489,51 +529,43 @@
           await AdMob.prepareInterstitial({ adId: this.interstitialId, isTesting: true });
         } catch(e) {}
       },
-
       async showInterstitial() {
         if (!this.initialized) return;
         try {
           const { AdMob } = window.Capacitor.Plugins;
           await AdMob.showInterstitial();
-          this.prepareInterstitial(); // Pre-load next
+          this.prepareInterstitial();
         } catch(e) {}
       },
-
-      async showRewarded(onRewardCallback) {
+      async showRewarded(onSuccess) {
         if (!this.initialized) {
-          // Simulation for test/fallback
-          setTimeout(onRewardCallback, 1000);
+          setTimeout(onSuccess, 800);
           return;
         }
         try {
           const { AdMob } = window.Capacitor.Plugins;
           await AdMob.prepareRewardVideoAd({ adId: this.rewardedId, isTesting: true });
           const reward = await AdMob.showRewardVideoAd();
-          if (reward) onRewardCallback();
+          if (reward) onSuccess();
         } catch(e) {
-          onRewardCallback();
+          onSuccess();
         }
       },
-
       startLoopTimer() {
         clearInterval(this.timerInterval);
         this.continuousSeconds = 0;
         this.timerInterval = setInterval(() => {
           this.continuousSeconds++;
-          // Trigger Ad between 120 and 150 seconds (at 135 seconds)
           if (this.continuousSeconds === 132) {
-            const toast = document.getElementById('ad-toast');
-            toast.style.display = 'block';
+            document.getElementById('ad-toast').style.display = 'block';
           }
           if (this.continuousSeconds >= 135) {
             this.continuousSeconds = 0;
-            const toast = document.getElementById('ad-toast');
-            toast.style.display = 'none';
+            document.getElementById('ad-toast').style.display = 'none';
             this.showInterstitial();
           }
         }, 1000);
       },
-
       pauseLoopTimer() {
         clearInterval(this.timerInterval);
       }
@@ -570,14 +602,14 @@
         try {
           const osc = this.ctx.createOscillator();
           const gain = this.ctx.createGain();
-          osc.frequency.setValueAtTime(380, this.ctx.currentTime);
-          osc.frequency.exponentialRampToValueAtTime(160, this.ctx.currentTime + 0.12);
-          gain.gain.setValueAtTime(0.14, this.ctx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.12);
+          osc.frequency.setValueAtTime(320, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(140, this.ctx.currentTime + 0.16);
+          gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.16);
           osc.connect(gain);
           gain.connect(this.ctx.destination);
           osc.start();
-          osc.stop(this.ctx.currentTime + 0.12);
+          osc.stop(this.ctx.currentTime + 0.16);
         } catch(e) {}
       },
       merge(val) {
@@ -586,16 +618,16 @@
         try {
           const osc = this.ctx.createOscillator();
           const gain = this.ctx.createGain();
-          const p = 300 + Math.min(Math.log2(val || 2) * 50, 500);
-          osc.type = 'triangle';
+          const p = 260 + Math.min(Math.log2(val || 2) * 45, 450);
+          osc.type = 'sine';
           osc.frequency.setValueAtTime(p, this.ctx.currentTime);
-          osc.frequency.exponentialRampToValueAtTime(p * 1.35, this.ctx.currentTime + 0.18);
+          osc.frequency.exponentialRampToValueAtTime(p * 1.3, this.ctx.currentTime + 0.24);
           gain.gain.setValueAtTime(0.18, this.ctx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.18);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.24);
           osc.connect(gain);
           gain.connect(this.ctx.destination);
           osc.start();
-          osc.stop(this.ctx.currentTime + 0.18);
+          osc.stop(this.ctx.currentTime + 0.24);
         } catch(e) {}
       }
     };
@@ -623,7 +655,9 @@
       livesDisplay.innerText = hearts[lives] || '🖤🖤🖤';
     }
 
-    function renderBoard(fallingCell = null, mergedCell = null) {
+    function renderBoard(meta = {}) {
+      const { falling = null, target = null, absorbing = [] } = meta;
+
       columns.forEach((colEl, c) => {
         colEl.innerHTML = '';
         for (let r = 0; r < ROWS; r++) {
@@ -634,12 +668,17 @@
           if (val > 0) {
             const tile = document.createElement('div');
             tile.className = 'tile';
-            if (fallingCell && fallingCell.r === r && fallingCell.c === c) {
+
+            if (falling && falling.r === r && falling.c === c) {
               tile.classList.add('falling');
             }
-            if (mergedCell && mergedCell.r === r && mergedCell.c === c) {
-              tile.classList.add('merged');
+            if (target && target.r === r && target.c === c) {
+              tile.classList.add('merged-target');
             }
+            if (absorbing.some(a => a.r === r && a.c === c)) {
+              tile.classList.add('absorbing');
+            }
+
             tile.innerText = val;
             const colors = PALETTE[val] || PALETTE[2];
             tile.style.backgroundColor = colors.bg;
@@ -678,7 +717,6 @@
     function dropIntoColumn(col) {
       if (isProcessing) return;
 
-      // Find lowest empty row in column
       let targetRow = -1;
       for (let r = ROWS - 1; r >= 0; r--) {
         if (board[r][col] === 0) {
@@ -687,7 +725,6 @@
         }
       }
 
-      // Column overflow: lose a life
       if (targetRow === -1) {
         handleLifeLoss(col);
         return;
@@ -697,16 +734,16 @@
       Sound.drop();
 
       board[targetRow][col] = nextValue;
-      renderBoard({ r: targetRow, c: col });
+      renderBoard({ falling: { r: targetRow, c: col } });
       rollNextValue();
 
-      // Relaxed 300ms pause to comfortably see block land before merges start
+      // Relaxed 480ms pause to let the falling animation land softly
       setTimeout(() => {
-        resolveFullBoard(targetRow, col, () => {
+        resolveClusters(targetRow, col, () => {
           isProcessing = false;
           checkOverflow();
         });
-      }, 300);
+      }, 480);
     }
 
     function handleLifeLoss(col) {
@@ -715,7 +752,6 @@
       AdMobManager.showInterstitial();
 
       if (lives > 0) {
-        // Clear that single overflown column to allow continued play
         for (let r = 0; r < ROWS; r++) board[r][col] = 0;
         renderBoard();
         document.getElementById('life-lost-desc').innerText = `You lost 1 life. ${lives} ${lives === 1 ? 'life' : 'lives'} remaining!`;
@@ -726,16 +762,12 @@
       }
     }
 
-    // --- CONNECTED CLUSTER MERGE (L-Shape, T-Shape, 7-Shape, etc.) ---
-    function resolveFullBoard(lastR, lastC, callback) {
-      let didMerge = false;
-      let targetMergeCell = null;
-
-      // ബോർഡിൽ സന്ദർശിച്ച സെല്ലുകൾ ട്രാക്ക് ചെയ്യാൻ
+    // --- STRICT ORTHOGONAL CLUSTER RESOLVER (3+ Loop / L-Shape / T-Shape ONLY) ---
+    function resolveClusters(lastR, lastC, callback) {
       const visited = Array.from({ length: ROWS }, () => Array(COLS).fill(false));
       let bestCluster = null;
 
-      // 1. ഫ്ലഡ്-ഫിൽ വഴി ഒരേ നമ്പറുകളുടെ കൂട്ടങ്ങൾ (Clusters) കണ്ടെത്തുന്നു (Up/Down/Left/Right മാത്രം)
+      // 1. ഫ്ലഡ്-ഫിൽ വഴി ഒരേ സംഖ്യകളുടെ കൂട്ടങ്ങൾ കണ്ടെത്തുന്നു (Strict Up/Down/Left/Right മാത്രം)
       for (let r = ROWS - 1; r >= 0; r--) {
         for (let c = 0; c < COLS; c++) {
           if (board[r][c] > 0 && !visited[r][c]) {
@@ -748,15 +780,15 @@
               const curr = queue.shift();
               cluster.push(curr);
 
-              // 4 നേരിട്ടുള്ള ദിശകൾ (Up, Down, Left, Right)
-              const directions = [
+              // 4 നേരിട്ടുള്ള ദിശകൾ മാത്രം (NO DIAGONALS)
+              const dirs = [
                 { dr: -1, dc: 0 },
                 { dr: 1, dc: 0 },
                 { dr: 0, dc: -1 },
                 { dr: 0, dc: 1 }
               ];
 
-              for (const dir of directions) {
+              for (const dir of dirs) {
                 const nr = curr.r + dir.dr;
                 const nc = curr.c + dir.dc;
 
@@ -769,7 +801,7 @@
               }
             }
 
-            // L-Shape, 7-Shape, T-Shape അല്ലെങ്കിൽ 3-ൽ കൂടുതൽ ബന്ധപ്പെട്ട ബ്ലോക്കുകൾ ഉണ്ടെങ്കിൽ
+            // കർശനമായ നിബന്ധന: 3 അല്ലെങ്കിൽ അതിൽ കൂടുതൽ പരസ്പരം തൊട്ടുനിൽക്കുന്നവ മാത്രം (L-Shape, T-Shape, Corner-Turns)
             if (cluster.length >= 3) {
               bestCluster = { val, cells: cluster };
               break;
@@ -779,34 +811,55 @@
         if (bestCluster) break;
       }
 
-      // 2. ക്ലസ്റ്റർ മെർജ് ചെയ്യൽ
+      // 2. ആനിമേറ്റഡ് മാഗ്നറ്റിക് മെർജ്
       if (bestCluster) {
         const { val, cells } = bestCluster;
-        
-        // ഏറ്റവും താഴെയുള്ള (അല്ലെങ്കിൽ ഒടുവിൽ കളിച്ച) ബ്ലോക്കിലേക്ക് മെർജ് ആകാൻ ടാർഗെറ്റ് കണ്ടെത്തുന്നു
+
+        // ഏറ്റവും താഴെയുള്ള അല്ലെങ്കിൽ അവസാനം വീണ ബ്ലോക്കിലേക്ക് മെർജ് ആകുന്നു
         cells.sort((a, b) => b.r - a.r);
         const target = cells.find(cell => cell.r === lastR && cell.c === lastC) || cells[0];
+        const absorbingCells = cells.filter(cell => !(cell.r === target.r && cell.c === target.c));
 
-        // ക്ലസ്റ്ററിലെ എണ്ണമനുസരിച്ച് പുതിയ മൂല്യം കണക്കാക്കുന്നു (3 എണ്ണമെങ്കിൽ 2x, അതിൽ കൂടുതലെങ്കിൽ അടുത്ത പവർ)
-        const multiplier = Math.pow(2, Math.floor(Math.log2(cells.length)));
-        const newVal = val * Math.max(2, multiplier);
+        // ആനിമേഷൻ സ്റ്റെപ്പ് 1: ചുറ്റുമുള്ളവ ഉള്ളിലേക്ക് അലിഞ്ഞു ചേരുന്നു (Absorb)
+        renderBoard({ absorbing: absorbingCells });
 
-        // ടാർഗെറ്റിൽ പുതിയ നമ്പർ ഇടുക, ബാക്കിയുള്ളവ ക്ലിയർ ചെയ്യുക
-        for (const cell of cells) {
-          if (cell.r === target.r && cell.c === target.c) {
-            board[cell.r][cell.c] = newVal;
-          } else {
-            board[cell.r][cell.c] = 0;
+        setTimeout(() => {
+          // പുതിയ മൂല്യം നൽകുന്നു
+          const multiplier = Math.pow(2, Math.floor(Math.log2(cells.length)));
+          const newVal = val * Math.max(2, multiplier);
+
+          for (const cell of cells) {
+            if (cell.r === target.r && cell.c === target.c) {
+              board[cell.r][cell.c] = newVal;
+            } else {
+              board[cell.r][cell.c] = 0;
+            }
           }
-        }
 
-        didMerge = true;
-        targetMergeCell = target;
-        triggerScore(newVal * cells.length);
+          triggerScore(newVal * cells.length);
+
+          // ആനിമേഷൻ സ്റ്റെപ്പ് 2: ടാർഗെറ്റ് ബ്ലോക്ക് പൾസ് ചെയ്ത് തിളങ്ങുന്നു
+          renderBoard({ target: target });
+
+          // ആനിമേഷൻ സ്റ്റെപ്പ് 3: ഗ്രാവിറ്റി വഴി ബാക്കി ബ്ലോക്കുകൾ സ്മൂത്തായി താഴേക്ക് ഇറങ്ങുന്നു
+          setTimeout(() => {
+            applySmoothGravity();
+            renderBoard();
+
+            // അടുത്ത കാസ്കേഡ് ലൂപ്പിനായി 450ms വിശ്രമം
+            setTimeout(() => {
+              resolveClusters(target.r, target.c, callback);
+            }, 450);
+          }, 360);
+
+        }, 380);
+
+      } else {
+        callback();
       }
+    }
 
-      // 3. ഗ്രാവിറ്റി (താഴെ ശൂന്യമായ സ്ഥലങ്ങളിലേക്ക് മുകളിലുള്ളവ ഇറങ്ങി വരാൻ)
-      let didDrop = false;
+    function applySmoothGravity() {
       for (let c = 0; c < COLS; c++) {
         for (let r = ROWS - 1; r > 0; r--) {
           if (board[r][c] === 0) {
@@ -814,25 +867,14 @@
               if (board[k][c] > 0) {
                 board[r][c] = board[k][c];
                 board[k][c] = 0;
-                didDrop = true;
                 break;
               }
             }
           }
         }
       }
-
-      // 4. ആനിമേഷൻ റെൻഡർ & തുടർച്ചയായ ചെക്ക്
-      if (didMerge || didDrop) {
-        renderBoard(null, targetMergeCell);
-        setTimeout(() => {
-          resolveFullBoard(targetMergeCell ? targetMergeCell.r : lastR, targetMergeCell ? targetMergeCell.c : lastC, callback);
-        }, 280);
-      } else {
-        callback();
-      }
     }
-    
+
     function triggerScore(newVal) {
       score += newVal;
       scoreText.innerText = score;
@@ -918,12 +960,10 @@
       document.getElementById('life-lost-modal').classList.remove('active');
     };
 
-    // Rewarded Ad Revive
     document.getElementById('reward-revive-btn').onclick = () => {
       AdMobManager.showRewarded(() => {
         lives = 1;
         updateLivesUI();
-        // Clear top rows to give room
         for (let r = 0; r < 2; r++) {
           for (let c = 0; c < COLS; c++) board[r][c] = 0;
         }
