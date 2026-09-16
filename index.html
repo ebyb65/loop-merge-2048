@@ -726,81 +726,86 @@
       }
     }
 
+    // --- CONNECTED CLUSTER MERGE (L-Shape, T-Shape, 7-Shape, etc.) ---
     function resolveFullBoard(lastR, lastC, callback) {
       let didMerge = false;
       let targetMergeCell = null;
 
-      // 1. Check Vertical Neighbor (Bottom match)
-      for (let r = ROWS - 2; r >= 0; r--) {
+      // ബോർഡിൽ സന്ദർശിച്ച സെല്ലുകൾ ട്രാക്ക് ചെയ്യാൻ
+      const visited = Array.from({ length: ROWS }, () => Array(COLS).fill(false));
+      let bestCluster = null;
+
+      // 1. ഫ്ലഡ്-ഫിൽ വഴി ഒരേ നമ്പറുകളുടെ കൂട്ടങ്ങൾ (Clusters) കണ്ടെത്തുന്നു (Up/Down/Left/Right മാത്രം)
+      for (let r = ROWS - 1; r >= 0; r--) {
         for (let c = 0; c < COLS; c++) {
-          if (board[r][c] > 0 && board[r][c] === board[r + 1][c]) {
-            const newVal = board[r][c] * 2;
-            board[r + 1][c] = newVal;
-            board[r][c] = 0;
-            didMerge = true;
-            targetMergeCell = { r: r + 1, c: c };
-            triggerScore(newVal);
-            break;
-          }
-        }
-        if (didMerge) break;
-      }
+          if (board[r][c] > 0 && !visited[r][c]) {
+            const val = board[r][c];
+            const cluster = [];
+            const queue = [{ r, c }];
+            visited[r][c] = true;
 
-      // 2. Check Horizontal Neighbors (Left / Right match)
-      if (!didMerge) {
-        for (let r = ROWS - 1; r >= 0; r--) {
-          for (let c = 0; c < COLS - 1; c++) {
-            if (board[r][c] > 0 && board[r][c] === board[r][c + 1]) {
-              const newVal = board[r][c] * 2;
-              const targetCol = (c === lastC) ? c : c + 1;
-              const sourceCol = (targetCol === c) ? c + 1 : c;
+            while (queue.length > 0) {
+              const curr = queue.shift();
+              cluster.push(curr);
 
-              board[r][targetCol] = newVal;
-              board[r][sourceCol] = 0;
-              didMerge = true;
-              targetMergeCell = { r: r, c: targetCol };
-              triggerScore(newVal);
+              // 4 നേരിട്ടുള്ള ദിശകൾ (Up, Down, Left, Right)
+              const directions = [
+                { dr: -1, dc: 0 },
+                { dr: 1, dc: 0 },
+                { dr: 0, dc: -1 },
+                { dr: 0, dc: 1 }
+              ];
+
+              for (const dir of directions) {
+                const nr = curr.r + dir.dr;
+                const nc = curr.c + dir.dc;
+
+                if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) {
+                  if (!visited[nr][nc] && board[nr][nc] === val) {
+                    visited[nr][nc] = true;
+                    queue.push({ r: nr, c: nc });
+                  }
+                }
+              }
+            }
+
+            // L-Shape, 7-Shape, T-Shape അല്ലെങ്കിൽ 3-ൽ കൂടുതൽ ബന്ധപ്പെട്ട ബ്ലോക്കുകൾ ഉണ്ടെങ്കിൽ
+            if (cluster.length >= 3) {
+              bestCluster = { val, cells: cluster };
               break;
             }
           }
-          if (didMerge) break;
         }
+        if (bestCluster) break;
       }
 
-      // 3. Check Diagonal Neighbors (Corner-to-Corner Adjacent)
-      if (!didMerge) {
-        for (let r = ROWS - 2; r >= 0; r--) {
-          for (let c = 0; c < COLS; c++) {
-            if (board[r][c] === 0) continue;
-            const currentVal = board[r][c];
+      // 2. ക്ലസ്റ്റർ മെർജ് ചെയ്യൽ
+      if (bestCluster) {
+        const { val, cells } = bestCluster;
+        
+        // ഏറ്റവും താഴെയുള്ള (അല്ലെങ്കിൽ ഒടുവിൽ കളിച്ച) ബ്ലോക്കിലേക്ക് മെർജ് ആകാൻ ടാർഗെറ്റ് കണ്ടെത്തുന്നു
+        cells.sort((a, b) => b.r - a.r);
+        const target = cells.find(cell => cell.r === lastR && cell.c === lastC) || cells[0];
 
-            // Diagonal Bottom-Right Check
-            if (c + 1 < COLS && board[r + 1][c + 1] === currentVal) {
-              const newVal = currentVal * 2;
-              board[r + 1][c + 1] = newVal; // Merge into the lower block
-              board[r][c] = 0;
-              didMerge = true;
-              targetMergeCell = { r: r + 1, c: c + 1 };
-              triggerScore(newVal);
-              break;
-            }
+        // ക്ലസ്റ്ററിലെ എണ്ണമനുസരിച്ച് പുതിയ മൂല്യം കണക്കാക്കുന്നു (3 എണ്ണമെങ്കിൽ 2x, അതിൽ കൂടുതലെങ്കിൽ അടുത്ത പവർ)
+        const multiplier = Math.pow(2, Math.floor(Math.log2(cells.length)));
+        const newVal = val * Math.max(2, multiplier);
 
-            // Diagonal Bottom-Left Check
-            if (c - 1 >= 0 && board[r + 1][c - 1] === currentVal) {
-              const newVal = currentVal * 2;
-              board[r + 1][c - 1] = newVal; // Merge into the lower block
-              board[r][c] = 0;
-              didMerge = true;
-              targetMergeCell = { r: r + 1, c: c - 1 };
-              triggerScore(newVal);
-              break;
-            }
+        // ടാർഗെറ്റിൽ പുതിയ നമ്പർ ഇടുക, ബാക്കിയുള്ളവ ക്ലിയർ ചെയ്യുക
+        for (const cell of cells) {
+          if (cell.r === target.r && cell.c === target.c) {
+            board[cell.r][cell.c] = newVal;
+          } else {
+            board[cell.r][cell.c] = 0;
           }
-          if (didMerge) break;
         }
+
+        didMerge = true;
+        targetMergeCell = target;
+        triggerScore(newVal * cells.length);
       }
 
-      // 4. Pull down any floating tiles caused by horizontal or diagonal voids
+      // 3. ഗ്രാവിറ്റി (താഴെ ശൂന്യമായ സ്ഥലങ്ങളിലേക്ക് മുകളിലുള്ളവ ഇറങ്ങി വരാൻ)
       let didDrop = false;
       for (let c = 0; c < COLS; c++) {
         for (let r = ROWS - 1; r > 0; r--) {
@@ -817,9 +822,12 @@
         }
       }
 
+      // 4. ആനിമേഷൻ റെൻഡർ & തുടർച്ചയായ ചെക്ക്
       if (didMerge || didDrop) {
         renderBoard(null, targetMergeCell);
-        setTimeout(() => resolveFullBoard(targetMergeCell ? targetMergeCell.r : lastR, targetMergeCell ? targetMergeCell.c : lastC, callback), 260);
+        setTimeout(() => {
+          resolveFullBoard(targetMergeCell ? targetMergeCell.r : lastR, targetMergeCell ? targetMergeCell.c : lastC, callback);
+        }, 280);
       } else {
         callback();
       }
