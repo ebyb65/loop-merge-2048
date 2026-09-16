@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Drop 2048: Zen Flow</title>
+  <title>Drop 2048: Zen Edition</title>
   <style>
     :root {
       --bg-top: #f8fafc;
@@ -59,10 +59,10 @@
       transform: scale(1);
     }
 
-    /* HOME SCREEN */
+    /* HERO & HOME */
     .hero-section {
       text-align: center;
-      margin-top: 12vh;
+      margin-top: 10vh;
     }
     .hero-badge {
       display: inline-flex;
@@ -78,10 +78,10 @@
       color: #6366f1;
       box-shadow: 0 4px 15px rgba(99, 102, 241, 0.12);
       border: 1px solid rgba(99, 102, 241, 0.15);
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
     .hero-title {
-      font-size: 46px;
+      font-size: 44px;
       font-weight: 900;
       letter-spacing: -1.5px;
       line-height: 1;
@@ -93,13 +93,14 @@
       margin-top: 8px;
       font-weight: 500;
     }
+
     .menu-wrap {
       width: 100%;
       max-width: 300px;
       display: flex;
       flex-direction: column;
       gap: 12px;
-      margin-bottom: 8vh;
+      margin-bottom: 6vh;
     }
     .btn {
       width: 100%;
@@ -135,14 +136,14 @@
       border: 1px solid #e2e8f0;
     }
 
-    /* HEADER */
+    /* HEADER & STATS */
     header {
       width: 100%;
       max-width: 380px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-top: 6px;
+      margin-top: 4px;
     }
     .icon-btn {
       width: 44px;
@@ -160,15 +161,15 @@
     }
     .stats-group {
       display: flex;
-      gap: 8px;
+      gap: 6px;
       align-items: center;
     }
     .stat-card {
       background: #ffffff;
       border: 1px solid #e2e8f0;
       border-radius: 14px;
-      padding: 6px 12px;
-      min-width: 68px;
+      padding: 6px 10px;
+      min-width: 64px;
       text-align: center;
       box-shadow: var(--shadow);
     }
@@ -177,27 +178,34 @@
       text-transform: uppercase;
       font-weight: 700;
       color: var(--text-muted);
-      letter-spacing: 0.6px;
+      letter-spacing: 0.5px;
       display: block;
     }
     .stat-card strong {
-      font-size: 17px;
+      font-size: 16px;
       font-weight: 800;
       color: #0f172a;
     }
     .lives-box {
-      font-size: 18px;
-      letter-spacing: 2px;
+      font-size: 15px;
+      letter-spacing: 1px;
+    }
+    .refill-timer {
+      font-size: 8px;
+      color: #ef4444;
+      font-weight: 700;
+      display: block;
+      margin-top: 2px;
     }
 
     /* DROPPER ROW */
     #dropper-strip {
       width: 100%;
       max-width: 360px;
-      height: 72px;
+      height: 68px;
       display: flex;
       position: relative;
-      margin-top: 8px;
+      margin-top: 6px;
     }
     .dropper-slot {
       flex: 1;
@@ -236,7 +244,7 @@
       gap: 6px;
       padding: 8px;
       box-shadow: var(--shadow);
-      margin: auto 0 8px 0;
+      margin: auto 0 6px 0;
     }
     .col-track {
       display: grid;
@@ -274,66 +282,34 @@
       transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.3s ease;
     }
     
-    /* Gentle downward gliding fall */
     .tile.falling {
       animation: gentleDrop 0.48s cubic-bezier(0.22, 1, 0.36, 1) forwards;
     }
     @keyframes gentleDrop {
-      0% {
-        transform: translateY(-90px) scale(0.8);
-        opacity: 0.2;
-      }
-      70% {
-        transform: translateY(6px) scale(1.08, 0.92);
-        opacity: 1;
-      }
-      100% {
-        transform: translateY(0) scale(1, 1);
-        opacity: 1;
-      }
+      0% { transform: translateY(-80px) scale(0.8); opacity: 0.2; }
+      70% { transform: translateY(6px) scale(1.08, 0.92); opacity: 1; }
+      100% { transform: translateY(0) scale(1, 1); opacity: 1; }
     }
 
-    /* Target tile receiving the merge (Puff, Pulse & Shimmer) */
     .tile.merged-target {
       animation: organicMerge 0.52s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
       z-index: 10;
     }
     @keyframes organicMerge {
-      0% {
-        transform: scale(0.9);
-      }
-      40% {
-        transform: scale(1.3);
-        box-shadow: 0 0 25px rgba(255, 255, 255, 0.8), 0 10px 20px rgba(0,0,0,0.25);
-        filter: brightness(1.25);
-      }
-      75% {
-        transform: scale(0.96);
-      }
-      100% {
-        transform: scale(1);
-        filter: brightness(1);
-      }
+      0% { transform: scale(0.9); }
+      40% { transform: scale(1.3); box-shadow: 0 0 25px rgba(255, 255, 255, 0.8), 0 10px 20px rgba(0,0,0,0.25); filter: brightness(1.25); }
+      75% { transform: scale(0.96); }
+      100% { transform: scale(1); filter: brightness(1); }
     }
 
-    /* Neighbor tiles getting sucked into the target */
     .tile.absorbing {
       animation: dissolveInward 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
       pointer-events: none;
     }
     @keyframes dissolveInward {
-      0% {
-        transform: scale(1);
-        opacity: 1;
-      }
-      50% {
-        transform: scale(0.6);
-        opacity: 0.6;
-      }
-      100% {
-        transform: scale(0.1);
-        opacity: 0;
-      }
+      0% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(0.6); opacity: 0.6; }
+      100% { transform: scale(0.1); opacity: 0; }
     }
 
     /* AD TOAST */
@@ -392,11 +368,12 @@
     <div class="hero-section">
       <div class="hero-badge">✦ Minimal Puzzle</div>
       <h1 class="hero-title">DROP 2048</h1>
-      <p class="hero-sub">Connect 3+ • Smooth Flow • 3 Lives</p>
+      <p class="hero-sub">Drop • Merge • 3 Lives</p>
     </div>
 
     <div class="menu-wrap">
       <button class="btn btn-main" id="start-btn">▶ Play Game</button>
+      <button class="btn btn-reward" id="home-refill-btn">📺 Watch Ad (+1 Life)</button>
       <button class="btn btn-sub" id="rules-btn">How to Play</button>
       <button class="btn btn-sub" id="sound-btn">🔊 Sound: ON</button>
     </div>
@@ -410,6 +387,7 @@
         <div class="stat-card">
           <small>Lives</small>
           <div class="lives-box" id="lives-display">❤️❤️❤️</div>
+          <span class="refill-timer" id="timer-display">FULL</span>
         </div>
         <div class="stat-card">
           <small>Score</small>
@@ -446,9 +424,9 @@
     <div class="modal-card">
       <h2 style="font-size:22px; margin-bottom:12px; color:#0f172a;">How to Play</h2>
       <p style="font-size:13px; color:#64748b; text-align:left; line-height:1.6; margin-bottom:20px;">
-        1. <b>Drop Numbers:</b> Tap any column to drop your block smoothly.<br><br>
-        2. <b>Cluster Merging (3+):</b> When 3 or more identical numbers connect in straight lines, L-Shapes, or T-Shapes (strictly vertical & horizontal, no diagonals), they smoothly merge into one higher number!<br><br>
-        3. <b>3 Lives:</b> Overfilling any column costs 1 life. Clear lanes and reach 2048!
+        1. <b>Drop & Match:</b> Direct horizontal & vertical pairs (like two 8s) merge immediately. Clusters of 3+ (L-Shape/T-Shape) merge cleanly into one higher number.<br><br>
+        2. <b>3 Lives System:</b> Each lost life automatically refills in <b>15 minutes</b>.<br><br>
+        3. <b>Emergency Revive:</b> Need a life immediately? Watch a short rewarded video ad!
       </p>
       <button class="btn btn-main" id="close-rules-btn">Got It!</button>
     </div>
@@ -460,6 +438,7 @@
       <h2 style="font-size:22px; margin-bottom:16px; color:#0f172a;">Game Paused</h2>
       <div style="display:flex; flex-direction:column; gap:10px;">
         <button class="btn btn-main" id="resume-btn">Resume</button>
+        <button class="btn btn-reward" id="pause-refill-btn">📺 Watch Ad (+1 Life)</button>
         <button class="btn btn-sub" id="restart-btn">Restart Game</button>
         <button class="btn btn-sub" id="home-btn">Main Menu</button>
       </div>
@@ -470,26 +449,150 @@
   <div class="modal" id="life-lost-modal">
     <div class="modal-card">
       <h2 style="font-size:22px; color:#ef4444; margin-bottom:8px;">Column Full!</h2>
-      <p style="font-size:13px; color:#64748b; margin-bottom:16px;" id="life-lost-desc">You lost 1 life. 2 lives remaining!</p>
+      <p style="font-size:13px; color:#64748b; margin-bottom:16px;" id="life-lost-desc">You lost 1 life. Refills in 15 mins.</p>
       <button class="btn btn-main" id="continue-life-btn">Continue</button>
     </div>
   </div>
 
-  <!-- GAME OVER MODAL -->
+  <!-- GAME OVER / NO LIVES MODAL -->
   <div class="modal" id="over-modal">
     <div class="modal-card">
-      <h2 style="font-size:24px; color:#ef4444; margin-bottom:8px;">Game Over</h2>
-      <p style="font-size:13px; color:#64748b; margin-bottom:18px;">All 3 lives lost!</p>
+      <h2 style="font-size:24px; color:#ef4444; margin-bottom:8px;">Out of Lives!</h2>
+      <p style="font-size:13px; color:#64748b; margin-bottom:18px;" id="over-modal-desc">Wait 15 mins for a free life or watch an ad to revive immediately!</p>
       <div style="display:flex; flex-direction:column; gap:10px;">
-        <button class="btn btn-reward" id="reward-revive-btn">📺 Watch Ad for +1 Life</button>
-        <button class="btn btn-main" id="again-btn">Start Over</button>
+        <button class="btn btn-reward" id="reward-revive-btn">📺 Watch Ad to Revive (+1 ❤️)</button>
         <button class="btn btn-sub" id="over-home-btn">Main Menu</button>
       </div>
     </div>
   </div>
 
   <script>
-    // --- ADMOB BRIDGE ---
+    // --- 15-MIN LIFE REFILL ENGINE ---
+    const REFILL_INTERVAL = 15 * 60 * 1000; // 15 minutes in milliseconds
+    const MAX_LIVES = 3;
+
+    const LifeManager = {
+      lives: MAX_LIVES,
+      nextRefillTime: null,
+      timerLoop: null,
+
+      init() {
+        const savedLives = localStorage.getItem('drop2048_lives');
+        const savedTime = localStorage.getItem('drop2048_next_refill');
+
+        if (savedLives !== null) {
+          this.lives = parseInt(savedLives, 10);
+        } else {
+          this.lives = MAX_LIVES;
+        }
+
+        if (savedTime !== null) {
+          this.nextRefillTime = parseInt(savedTime, 10);
+        }
+
+        this.recalculateOfflineRefills();
+        this.startTimer();
+        this.updateUI();
+      },
+
+      recalculateOfflineRefills() {
+        if (this.lives >= MAX_LIVES) {
+          this.nextRefillTime = null;
+          this.save();
+          return;
+        }
+
+        const now = Date.now();
+        if (this.nextRefillTime && now >= this.nextRefillTime) {
+          const elapsed = now - this.nextRefillTime;
+          const livesGained = 1 + Math.floor(elapsed / REFILL_INTERVAL);
+
+          this.lives = Math.min(MAX_LIVES, this.lives + livesGained);
+
+          if (this.lives < MAX_LIVES) {
+            const remainder = elapsed % REFILL_INTERVAL;
+            this.nextRefillTime = now + (REFILL_INTERVAL - remainder);
+          } else {
+            this.nextRefillTime = null;
+          }
+          this.save();
+        }
+      },
+
+      consumeLife() {
+        if (this.lives > 0) {
+          this.lives--;
+          if (!this.nextRefillTime) {
+            this.nextRefillTime = Date.now() + REFILL_INTERVAL;
+          }
+          this.save();
+          this.updateUI();
+          return true;
+        }
+        return false;
+      },
+
+      addLife() {
+        if (this.lives < MAX_LIVES) {
+          this.lives++;
+          if (this.lives === MAX_LIVES) {
+            this.nextRefillTime = null;
+          }
+          this.save();
+          this.updateUI();
+        }
+      },
+
+      save() {
+        localStorage.setItem('drop2048_lives', this.lives);
+        if (this.nextRefillTime) {
+          localStorage.setItem('drop2048_next_refill', this.nextRefillTime);
+        } else {
+          localStorage.removeItem('drop2048_next_refill');
+        }
+      },
+
+      startTimer() {
+        clearInterval(this.timerLoop);
+        this.timerLoop = setInterval(() => {
+          if (this.lives < MAX_LIVES && this.nextRefillTime) {
+            const now = Date.now();
+            if (now >= this.nextRefillTime) {
+              this.lives++;
+              if (this.lives < MAX_LIVES) {
+                this.nextRefillTime = now + REFILL_INTERVAL;
+              } else {
+                this.nextRefillTime = null;
+              }
+              this.save();
+            }
+          }
+          this.updateUI();
+        }, 1000);
+      },
+
+      updateUI() {
+        const hearts = ['🖤🖤🖤', '❤️🖤🖤', '❤️❤️🖤', '❤️❤️❤️'];
+        const display = document.getElementById('lives-display');
+        const timerDisplay = document.getElementById('timer-display');
+        if (display) display.innerText = hearts[this.lives] || '🖤🖤🖤';
+
+        if (timerDisplay) {
+          if (this.lives >= MAX_LIVES) {
+            timerDisplay.innerText = 'FULL';
+            timerDisplay.style.color = '#10b981';
+          } else if (this.nextRefillTime) {
+            const diff = Math.max(0, Math.floor((this.nextRefillTime - Date.now()) / 1000));
+            const m = Math.floor(diff / 60);
+            const s = diff % 60;
+            timerDisplay.innerText = `+1 in ${m}:${s < 10 ? '0' : ''}${s}`;
+            timerDisplay.style.color = '#ef4444';
+          }
+        }
+      }
+    };
+
+    // --- ADMOB CONTROLLER ---
     const AdMobManager = {
       initialized: false,
       timerInterval: null,
@@ -636,7 +739,6 @@
     const ROWS = 7;
     let board = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
     let score = 0;
-    let lives = 3;
     let highScore = parseInt(localStorage.getItem('drop2048_hi') || '0', 10);
     let nextValue = 2;
     let isProcessing = false;
@@ -644,16 +746,10 @@
     const activeBlock = document.getElementById('active-block');
     const scoreText = document.getElementById('score-text');
     const bestText = document.getElementById('best-text');
-    const livesDisplay = document.getElementById('lives-display');
     const columns = document.querySelectorAll('.col-track');
     const dropperSlots = document.querySelectorAll('.dropper-slot');
 
     bestText.innerText = highScore;
-
-    function updateLivesUI() {
-      const hearts = ['🖤🖤🖤', '❤️🖤🖤', '❤️❤️🖤', '❤️❤️❤️'];
-      livesDisplay.innerText = hearts[lives] || '🖤🖤🖤';
-    }
 
     function renderBoard(meta = {}) {
       const { falling = null, target = null, absorbing = [] } = meta;
@@ -693,8 +789,6 @@
     function initGame() {
       board = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
       score = 0;
-      lives = 3;
-      updateLivesUI();
       scoreText.innerText = '0';
       isProcessing = false;
       rollNextValue();
@@ -717,6 +811,11 @@
     function dropIntoColumn(col) {
       if (isProcessing) return;
 
+      if (LifeManager.lives <= 0) {
+        document.getElementById('over-modal').classList.add('active');
+        return;
+      }
+
       let targetRow = -1;
       for (let r = ROWS - 1; r >= 0; r--) {
         if (board[r][col] === 0) {
@@ -737,7 +836,6 @@
       renderBoard({ falling: { r: targetRow, c: col } });
       rollNextValue();
 
-      // Relaxed 480ms pause to let the falling animation land softly
       setTimeout(() => {
         resolveClusters(targetRow, col, () => {
           isProcessing = false;
@@ -747,14 +845,13 @@
     }
 
     function handleLifeLoss(col) {
-      lives--;
-      updateLivesUI();
+      LifeManager.consumeLife();
       AdMobManager.showInterstitial();
 
-      if (lives > 0) {
+      if (LifeManager.lives > 0) {
         for (let r = 0; r < ROWS; r++) board[r][col] = 0;
         renderBoard();
-        document.getElementById('life-lost-desc').innerText = `You lost 1 life. ${lives} ${lives === 1 ? 'life' : 'lives'} remaining!`;
+        document.getElementById('life-lost-desc').innerText = `You lost 1 life. ${LifeManager.lives} remaining. Refills in 15 mins!`;
         document.getElementById('life-lost-modal').classList.add('active');
       } else {
         document.getElementById('over-modal').classList.add('active');
@@ -762,12 +859,11 @@
       }
     }
 
-    // --- STRICT ORTHOGONAL CLUSTER RESOLVER (3+ Loop / L-Shape / T-Shape ONLY) ---
+    // --- PAIRS & ORTHOGONAL CLUSTER MERGE ENGINE ---
     function resolveClusters(lastR, lastC, callback) {
       const visited = Array.from({ length: ROWS }, () => Array(COLS).fill(false));
       let bestCluster = null;
 
-      // 1. ഫ്ലഡ്-ഫിൽ വഴി ഒരേ സംഖ്യകളുടെ കൂട്ടങ്ങൾ കണ്ടെത്തുന്നു (Strict Up/Down/Left/Right മാത്രം)
       for (let r = ROWS - 1; r >= 0; r--) {
         for (let c = 0; c < COLS; c++) {
           if (board[r][c] > 0 && !visited[r][c]) {
@@ -780,7 +876,6 @@
               const curr = queue.shift();
               cluster.push(curr);
 
-              // 4 നേരിട്ടുള്ള ദിശകൾ മാത്രം (NO DIAGONALS)
               const dirs = [
                 { dr: -1, dc: 0 },
                 { dr: 1, dc: 0 },
@@ -801,8 +896,8 @@
               }
             }
 
-            // കർശനമായ നിബന്ധന: 3 അല്ലെങ്കിൽ അതിൽ കൂടുതൽ പരസ്പരം തൊട്ടുനിൽക്കുന്നവ മാത്രം (L-Shape, T-Shape, Corner-Turns)
-            if (cluster.length >= 3) {
+            // Direct pairs (length >= 2) and clusters (L, T, 7) merge!
+            if (cluster.length >= 2) {
               bestCluster = { val, cells: cluster };
               break;
             }
@@ -811,20 +906,16 @@
         if (bestCluster) break;
       }
 
-      // 2. ആനിമേറ്റഡ് മാഗ്നറ്റിക് മെർജ്
       if (bestCluster) {
         const { val, cells } = bestCluster;
 
-        // ഏറ്റവും താഴെയുള്ള അല്ലെങ്കിൽ അവസാനം വീണ ബ്ലോക്കിലേക്ക് മെർജ് ആകുന്നു
         cells.sort((a, b) => b.r - a.r);
         const target = cells.find(cell => cell.r === lastR && cell.c === lastC) || cells[0];
         const absorbingCells = cells.filter(cell => !(cell.r === target.r && cell.c === target.c));
 
-        // ആനിമേഷൻ സ്റ്റെപ്പ് 1: ചുറ്റുമുള്ളവ ഉള്ളിലേക്ക് അലിഞ്ഞു ചേരുന്നു (Absorb)
         renderBoard({ absorbing: absorbingCells });
 
         setTimeout(() => {
-          // പുതിയ മൂല്യം നൽകുന്നു
           const multiplier = Math.pow(2, Math.floor(Math.log2(cells.length)));
           const newVal = val * Math.max(2, multiplier);
 
@@ -837,22 +928,18 @@
           }
 
           triggerScore(newVal * cells.length);
-
-          // ആനിമേഷൻ സ്റ്റെപ്പ് 2: ടാർഗെറ്റ് ബ്ലോക്ക് പൾസ് ചെയ്ത് തിളങ്ങുന്നു
           renderBoard({ target: target });
 
-          // ആനിമേഷൻ സ്റ്റെപ്പ് 3: ഗ്രാവിറ്റി വഴി ബാക്കി ബ്ലോക്കുകൾ സ്മൂത്തായി താഴേക്ക് ഇറങ്ങുന്നു
           setTimeout(() => {
             applySmoothGravity();
             renderBoard();
 
-            // അടുത്ത കാസ്കേഡ് ലൂപ്പിനായി 450ms വിശ്രമം
             setTimeout(() => {
               resolveClusters(target.r, target.c, callback);
-            }, 450);
-          }, 360);
+            }, 420);
+          }, 320);
 
-        }, 380);
+        }, 360);
 
       } else {
         callback();
@@ -925,11 +1012,16 @@
 
     // UI BUTTONS
     document.getElementById('start-btn').onclick = () => {
+      if (LifeManager.lives <= 0) {
+        document.getElementById('over-modal').classList.add('active');
+        return;
+      }
       Sound.init();
       AdMobManager.init();
       showScreen('game-screen');
       initGame();
     };
+
     document.getElementById('rules-btn').onclick = () => document.getElementById('rules-modal').classList.add('active');
     document.getElementById('close-rules-btn').onclick = () => document.getElementById('rules-modal').classList.remove('active');
 
@@ -960,27 +1052,34 @@
       document.getElementById('life-lost-modal').classList.remove('active');
     };
 
-    document.getElementById('reward-revive-btn').onclick = () => {
+    // Emergency Revive via Ad
+    function triggerAdRefill() {
       AdMobManager.showRewarded(() => {
-        lives = 1;
-        updateLivesUI();
+        LifeManager.addLife();
+        // Clear top 2 rows if on board to ensure breathing room
         for (let r = 0; r < 2; r++) {
           for (let c = 0; c < COLS; c++) board[r][c] = 0;
         }
         renderBoard();
         document.getElementById('over-modal').classList.remove('active');
+        document.getElementById('pause-modal').classList.remove('active');
         AdMobManager.startLoopTimer();
       });
-    };
+    }
 
-    document.getElementById('again-btn').onclick = () => {
-      document.getElementById('over-modal').classList.remove('active');
-      initGame();
-    };
+    document.getElementById('home-refill-btn').onclick = triggerAdRefill;
+    document.getElementById('pause-refill-btn').onclick = triggerAdRefill;
+    document.getElementById('reward-revive-btn').onclick = triggerAdRefill;
+
     document.getElementById('over-home-btn').onclick = () => {
       document.getElementById('over-modal').classList.remove('active');
       showScreen('home-screen');
     };
+
+    // Initialize Life Refill & Timers on load
+    window.addEventListener('load', () => {
+      LifeManager.init();
+    });
   </script>
 </body>
 </html>
