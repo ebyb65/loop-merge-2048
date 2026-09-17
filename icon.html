@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>App Icon Generator</title>
+  <style>
+    body {
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: #f1f5f9;
+      font-family: sans-serif;
+    }
+    canvas {
+      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+      border-radius: 24px;
+      max-width: 90vw;
+      height: auto;
+    }
+    button {
+      margin-top: 20px;
+      padding: 14px 28px;
+      background: #4f46e5;
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="c" width="512" height="512"></canvas>
+  <button onclick="download()">Download 512x512 App Icon</button>
+
+  <script>
+    const canvas = document.getElementById('c');
+    const ctx = canvas.getContext('2d');
+
+    function drawR(x, y, w, h, r, f, s, lw) {
+      ctx.beginPath();
+      ctx.roundRect(x, y, w, h, r);
+      if (f) { ctx.fillStyle = f; ctx.fill(); }
+      if (s) { ctx.strokeStyle = s; ctx.lineWidth = lw; ctx.stroke(); }
+    }
+
+    // Base background
+    drawR(0, 0, 512, 512, 0, '#f8fafc');
+    // Rounded game frame
+    drawR(30, 30, 452, 452, 100, '#ffffff', '#4f46e5', 8);
+    // Number 2 block
+    drawR(186, 75, 140, 140, 28, '#f59e0b');
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '900 68px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('2', 256, 145);
+
+    // Dropping arrow
+    ctx.beginPath();
+    ctx.moveTo(256, 250);
+    ctx.lineTo(232, 225);
+    ctx.lineTo(280, 225);
+    ctx.closePath();
+    ctx.fillStyle = '#4f46e5';
+    ctx.fill();
+
+    // 2048 Block
+    drawR(136, 260, 240, 180, 36, '#4f46e5');
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '900 64px sans-serif';
+    ctx.fillText('2048', 256, 350);
+
+    function download() {
+      const a = document.createElement('a');
+      a.download = 'drop2048-icon-512.png';
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+    }
+  </script>
+</body>
+</html>
