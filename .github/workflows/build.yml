@@ -144,3 +144,13 @@ jobs:
           name: Drop2048-PlayStore-AAB
           path: android/app/build/outputs/bundle/release/app-release.aab
           retention-days: 14
+- name: Export PEM Certificate for Play Console Reset
+        run: |
+          keytool -export -rfc -keystore android/release-key.jks -alias drop2048 -storepass drop2048pass -file upload_certificate.pem
+
+      - name: Upload PEM Certificate
+        uses: actions/upload-artifact@v4
+        with:
+          name: upload-certificate-pem
+          path: upload_certificate.pem
+          retention-days: 7
