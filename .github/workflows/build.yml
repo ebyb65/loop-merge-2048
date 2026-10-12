@@ -45,6 +45,18 @@ jobs:
           npx cap init "Drop 2048" "com.games.drop2048" --web-dir "www"
           npx cap add android
 
+      - name: Bump Version Code to 2 & Version Name to 1.0.1
+        run: |
+          python3 - << 'EOF'
+          gradle_path = "android/app/build.gradle"
+          with open(gradle_path, 'r') as f:
+              content = f.read()
+          content = content.replace("versionCode 1", "versionCode 2")
+          content = content.replace('versionName "1.0"', 'versionName "1.0.1"')
+          with open(gradle_path, 'w') as f:
+              f.write(content)
+          EOF
+
       - name: Inject AdMob App ID into AndroidManifest.xml
         run: |
           python3 - << 'EOF'
@@ -110,15 +122,19 @@ jobs:
           echo "sdk.dir=$ANDROID_HOME" > android/local.properties
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
-      - name: Generate Release Keystore & Build Signed AAB
+      - name: Restore Original Keystore from Secrets
+        env:
+          KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > android/release-key.jks
+
+      - name: Build Android Release Bundle (AAB) & APK
         run: |
           cd android
-          keytool -genkey -v -keystore release-key.jks -alias drop2048 -keyalg RSA -keysize 2048 -validity 10000 -storepass drop2048pass -keypass drop2048pass -dname "CN=Drop2048, OU=Games, O=Novahaus, L=Jubail, C=SA"
-          
           chmod +x gradlew
           ./gradlew bundleRelease assembleDebug --no-daemon
 
-      - name: Sign Android App Bundle (AAB)
+      - name: Sign Android App Bundle (AAB) with Original Key
         run: |
           jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore android/release-key.jks -storepass drop2048pass -keypass drop2048pass android/app/build/outputs/bundle/release/app-release.aab drop2048
 
@@ -128,10 +144,3 @@ jobs:
           name: Drop2048-PlayStore-AAB
           path: android/app/build/outputs/bundle/release/app-release.aab
           retention-days: 14
-
-      - name: Upload Keystore Backup (Important)
-        uses: actions/upload-artifact@v4
-        with:
-          name: Drop2048-Keystore-Backup
-          path: android/release-key.jks
-          retention-days: 30
