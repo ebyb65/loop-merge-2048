@@ -607,39 +607,58 @@
             const { AdMob } = window.Capacitor.Plugins;
             await AdMob.initialize({ initializeForTesting: true });
             this.initialized = true;
-            this.showBanner();
-            this.prepareInterstitial();
-          } catch(e) {}
+            
+            // Initialize കഴിഞ്ഞ ശേഷം ബാനറും ഇൻ്റർസ്റ്റീഷ്യലും ലോഡ് ചെയ്യുന്നു
+            setTimeout(() => {
+              this.showBanner();
+              this.prepareInterstitial();
+            }, 1000);
+          } catch(e) {
+            console.error('AdMob init error:', e);
+          }
         }
       },
+
       async showBanner() {
         if (!this.initialized) return;
         try {
-          const { AdMob, BannerAdPosition, BannerAdSize } = window.Capacitor.Plugins;
+          const { AdMob } = window.Capacitor.Plugins;
           await AdMob.showBanner({
             adId: this.bannerId,
-            adSize: BannerAdSize.BANNER,
-            position: BannerAdPosition.BOTTOM_CENTER,
+            adSize: 'BANNER',
+            position: 'BOTTOM_CENTER',
             margin: 0,
             isTesting: true
           });
-        } catch(e) {}
+        } catch(e) {
+          console.error('Show banner error:', e);
+        }
       },
+
       async prepareInterstitial() {
         if (!this.initialized) return;
         try {
           const { AdMob } = window.Capacitor.Plugins;
-          await AdMob.prepareInterstitial({ adId: this.interstitialId, isTesting: true });
-        } catch(e) {}
+          await AdMob.prepareInterstitial({ 
+            adId: this.interstitialId, 
+            isTesting: true 
+          });
+        } catch(e) {
+          console.error('Prepare interstitial error:', e);
+        }
       },
+
       async showInterstitial() {
         if (!this.initialized) return;
         try {
           const { AdMob } = window.Capacitor.Plugins;
           await AdMob.showInterstitial();
           this.prepareInterstitial();
-        } catch(e) {}
+        } catch(e) {
+          console.error('Show interstitial error:', e);
+        }
       },
+
       async showRewarded(onSuccess) {
         if (!this.initialized) {
           setTimeout(onSuccess, 800);
@@ -647,13 +666,18 @@
         }
         try {
           const { AdMob } = window.Capacitor.Plugins;
-          await AdMob.prepareRewardVideoAd({ adId: this.rewardedId, isTesting: true });
+          await AdMob.prepareRewardVideoAd({ 
+            adId: this.rewardedId, 
+            isTesting: true 
+          });
           const reward = await AdMob.showRewardVideoAd();
           if (reward) onSuccess();
         } catch(e) {
+          console.error('Show rewarded error:', e);
           onSuccess();
         }
-      },
+      }
+    };
       startLoopTimer() {
         clearInterval(this.timerInterval);
         this.continuousSeconds = 0;
