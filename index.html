@@ -266,7 +266,7 @@
       position: relative;
     }
 
-    /* SMOOTH ORGANIC TILE ANIMATIONS */
+    /* TILE ANIMATIONS */
     .tile {
       width: 100%;
       height: 100%;
@@ -426,7 +426,7 @@
       <p style="font-size:13px; color:#64748b; text-align:left; line-height:1.6; margin-bottom:20px;">
         1. <b>Drop & Match:</b> Direct horizontal & vertical pairs (like two 8s) merge immediately. Clusters of 3+ (L-Shape/T-Shape) merge cleanly into one higher number.<br><br>
         2. <b>3 Lives System:</b> Each lost life automatically refills in <b>15 minutes</b>.<br><br>
-        3. <b>Emergency Revive:</b> Need a life immediately? Watch a short rewarded video ad!
+        3. <b>Save Your Game:</b> When a column fills up, watch a quick ad to clear the top 2 rows and keep playing!
       </p>
       <button class="btn btn-main" id="close-rules-btn">Got It!</button>
     </div>
@@ -445,22 +445,29 @@
     </div>
   </div>
 
-  <!-- LIFE LOST WARNING MODAL -->
-  <div class="modal" id="life-lost-modal">
+  <!-- BOARD / COLUMN FULL MODAL (CONTINUE WITH AD OR RESTART WITH LIFE) -->
+  <div class="modal" id="board-full-modal">
     <div class="modal-card">
-      <h2 style="font-size:22px; color:#ef4444; margin-bottom:8px;">Column Full!</h2>
-      <p style="font-size:13px; color:#64748b; margin-bottom:16px;" id="life-lost-desc">You lost 1 life. Refills in 15 mins.</p>
-      <button class="btn btn-main" id="continue-life-btn">Continue</button>
+      <h2 style="font-size:22px; color:#ef4444; margin-bottom:8px;">No More Moves!</h2>
+      <p style="font-size:13px; color:#64748b; margin-bottom:18px;">
+        Column is full! Watch a short ad to clear top 2 rows and keep your score, or use 1 life to restart.
+      </p>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <button class="btn btn-reward" id="revive-clear-rows-btn">📺 Watch Ad (Clear 2 Rows)</button>
+        <button class="btn btn-sub" id="restart-lose-life-btn">Use 1 Life & Restart</button>
+      </div>
     </div>
   </div>
 
-  <!-- GAME OVER / NO LIVES MODAL -->
+  <!-- OUT OF LIVES MODAL -->
   <div class="modal" id="over-modal">
     <div class="modal-card">
       <h2 style="font-size:24px; color:#ef4444; margin-bottom:8px;">Out of Lives!</h2>
-      <p style="font-size:13px; color:#64748b; margin-bottom:18px;" id="over-modal-desc">Wait 15 mins for a free life or watch an ad to revive immediately!</p>
+      <p style="font-size:13px; color:#64748b; margin-bottom:18px;">
+        You have 0 lives left. Refills 1 life every 15 minutes, or watch an ad to get 1 life now!
+      </p>
       <div style="display:flex; flex-direction:column; gap:10px;">
-        <button class="btn btn-reward" id="reward-revive-btn">📺 Watch Ad to Revive (+1 ❤️)</button>
+        <button class="btn btn-reward" id="reward-revive-btn">📺 Watch Ad (+1 Life)</button>
         <button class="btn btn-sub" id="over-home-btn">Main Menu</button>
       </div>
     </div>
@@ -468,7 +475,7 @@
 
   <script>
     // --- 15-MIN LIFE REFILL ENGINE ---
-    const REFILL_INTERVAL = 15 * 60 * 1000; // 15 minutes in milliseconds
+    const REFILL_INTERVAL = 15 * 60 * 1000;
     const MAX_LIVES = 3;
 
     const LifeManager = {
@@ -608,7 +615,6 @@
             await AdMob.initialize({ initializeForTesting: true });
             this.initialized = true;
             
-            // Initialize കഴിഞ്ഞ ശേഷം ബാനറും ഇൻ്റർസ്റ്റീഷ്യലും ലോഡ് ചെയ്യുന്നു
             setTimeout(() => {
               this.showBanner();
               this.prepareInterstitial();
@@ -676,8 +682,8 @@
           console.error('Show rewarded error:', e);
           onSuccess();
         }
-      }
-    };
+      },
+
       startLoopTimer() {
         clearInterval(this.timerInterval);
         this.continuousSeconds = 0;
@@ -693,6 +699,7 @@
           }
         }, 1000);
       },
+
       pauseLoopTimer() {
         clearInterval(this.timerInterval);
       }
@@ -848,8 +855,9 @@
         }
       }
 
+      // തിരഞ്ഞെടുത്ത കോളത്തിൽ സ്ഥലമില്ലെങ്കിൽ
       if (targetRow === -1) {
-        handleLifeLoss(col);
+        showBoardFullPrompt();
         return;
       }
 
@@ -863,24 +871,28 @@
       setTimeout(() => {
         resolveClusters(targetRow, col, () => {
           isProcessing = false;
-          checkOverflow();
+          checkBoardFull();
         });
       }, 480);
     }
 
-    function handleLifeLoss(col) {
-      LifeManager.consumeLife();
-      AdMobManager.showInterstitial();
-
-      if (LifeManager.lives > 0) {
-        for (let r = 0; r < ROWS; r++) board[r][col] = 0;
-        renderBoard();
-        document.getElementById('life-lost-desc').innerText = `You lost 1 life. ${LifeManager.lives} remaining. Refills in 15 mins!`;
-        document.getElementById('life-lost-modal').classList.add('active');
-      } else {
-        document.getElementById('over-modal').classList.add('active');
-        AdMobManager.pauseLoopTimer();
+    function checkBoardFull() {
+      let isFull = true;
+      for (let c = 0; c < COLS; c++) {
+        if (board[0][c] === 0) {
+          isFull = false;
+          break;
+        }
       }
+      if (isFull) {
+        showBoardFullPrompt();
+      }
+    }
+
+    function showBoardFullPrompt() {
+      AdMobManager.pauseLoopTimer();
+      isProcessing = false;
+      document.getElementById('board-full-modal').classList.add('active');
     }
 
     // --- PAIRS & ORTHOGONAL CLUSTER MERGE ENGINE ---
@@ -920,7 +932,6 @@
               }
             }
 
-            // Direct pairs (length >= 2) and clusters (L, T, 7) merge!
             if (cluster.length >= 2) {
               bestCluster = { val, cells: cluster };
               break;
@@ -997,16 +1008,6 @@
       Sound.merge(newVal);
     }
 
-    function checkOverflow() {
-      let fullCols = 0;
-      for (let c = 0; c < COLS; c++) {
-        if (board[0][c] > 0) fullCols++;
-      }
-      if (fullCols >= COLS) {
-        handleLifeLoss(2);
-      }
-    }
-
     function setDropperPosition(col) {
       dropperSlots.forEach((slot, idx) => {
         if (idx === col) slot.appendChild(activeBlock);
@@ -1034,7 +1035,7 @@
       document.getElementById(id).classList.add('active');
     }
 
-    // UI BUTTONS
+    // --- BUTTON ACTIONS ---
     document.getElementById('start-btn').onclick = () => {
       if (LifeManager.lives <= 0) {
         document.getElementById('over-modal').classList.add('active');
@@ -1072,22 +1073,38 @@
       showScreen('home-screen');
     };
 
-    document.getElementById('continue-life-btn').onclick = () => {
-      document.getElementById('life-lost-modal').classList.remove('active');
+    // ആഡ് കണ്ട് മുകളിലെ 2 റോകൾ ക്ലിയർ ചെയ്ത് കളി തുടരാൻ
+    document.getElementById('revive-clear-rows-btn').onclick = () => {
+      AdMobManager.showRewarded(() => {
+        document.getElementById('board-full-modal').classList.remove('active');
+        for (let r = 0; r < 2; r++) {
+          for (let c = 0; c < COLS; c++) {
+            board[r][c] = 0;
+          }
+        }
+        applySmoothGravity();
+        renderBoard();
+        AdMobManager.startLoopTimer();
+      });
     };
 
-    // Emergency Revive via Ad
+    // ആഡ് കാണാതെ 1 ലൈഫ് ഉപയോഗിച്ച് പുതിയ കളി തുടങ്ങാൻ
+    document.getElementById('restart-lose-life-btn').onclick = () => {
+      document.getElementById('board-full-modal').classList.remove('active');
+      const hasLife = LifeManager.consumeLife();
+      if (hasLife) {
+        initGame();
+      } else {
+        document.getElementById('over-modal').classList.add('active');
+      }
+    };
+
+    // ലൈഫ് തീർന്നുപോയാൽ ആഡ് കണ്ട് ലൈഫ് റീഫിൽ ചെയ്യാൻ
     function triggerAdRefill() {
       AdMobManager.showRewarded(() => {
         LifeManager.addLife();
-        // Clear top 2 rows if on board to ensure breathing room
-        for (let r = 0; r < 2; r++) {
-          for (let c = 0; c < COLS; c++) board[r][c] = 0;
-        }
-        renderBoard();
         document.getElementById('over-modal').classList.remove('active');
         document.getElementById('pause-modal').classList.remove('active');
-        AdMobManager.startLoopTimer();
       });
     }
 
@@ -1100,7 +1117,6 @@
       showScreen('home-screen');
     };
 
-    // Initialize Life Refill & Timers on load
     window.addEventListener('load', () => {
       LifeManager.init();
     });
