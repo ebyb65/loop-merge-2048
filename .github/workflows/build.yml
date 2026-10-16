@@ -45,18 +45,17 @@ jobs:
           npx cap init "Drop 2048" "com.games.drop2048" --web-dir "www"
           npx cap add android
 
-      - name: Bump Version Code to 3 & Version Name to 1.0.2
+      - name: Bump Version Code to 4 & Version Name to 1.0.3
         run: |
           python3 - << 'EOF'
           gradle_path = "android/app/build.gradle"
           with open(gradle_path, 'r') as f:
               content = f.read()
-          content = content.replace("versionCode 1", "versionCode 3")
-          content = content.replace('versionName "1.0"', 'versionName "1.0.2"')
+          content = content.replace("versionCode 1", "versionCode 4")
+          content = content.replace('versionName "1.0"', 'versionName "1.0.3"')
           with open(gradle_path, 'w') as f:
               f.write(content)
           EOF
-
 
       - name: Inject AdMob App ID into AndroidManifest.xml
         run: |
@@ -68,7 +67,7 @@ jobs:
           admob_meta = """
                   <meta-data
                       android:name="com.google.android.gms.ads.APPLICATION_ID"
-                      android:value="ca-app-pub-3940256099942544~3347511713"/>
+                      android:value="ca-app-pub-6051259731219737~9249546816"/>
           """
           if "APPLICATION_ID" not in content:
               content = content.replace("</application>", f"{admob_meta}\n    </application>")
