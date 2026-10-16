@@ -45,17 +45,18 @@ jobs:
           npx cap init "Drop 2048" "com.games.drop2048" --web-dir "www"
           npx cap add android
 
-      - name: Bump Version Code to 2 & Version Name to 1.0.1
+      - name: Bump Version Code to 3 & Version Name to 1.0.2
         run: |
           python3 - << 'EOF'
           gradle_path = "android/app/build.gradle"
           with open(gradle_path, 'r') as f:
               content = f.read()
-          content = content.replace("versionCode 1", "versionCode 2")
-          content = content.replace('versionName "1.0"', 'versionName "1.0.1"')
+          content = content.replace("versionCode 1", "versionCode 3")
+          content = content.replace('versionName "1.0"', 'versionName "1.0.2"')
           with open(gradle_path, 'w') as f:
               f.write(content)
           EOF
+
 
       - name: Inject AdMob App ID into AndroidManifest.xml
         run: |
