@@ -231,21 +231,21 @@
     }
 
     /* BOARD FRAME */
-#board-frame {
-  width: 100%;
-  max-width: 360px;
-  height: 54vh; /* 62vh മാറ്റി 54vh ആക്കി, ബോർഡ് ഒതുങ്ങി നിൽക്കും */
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(12px);
-  border: 1.5px solid rgba(255, 255, 255, 0.8);
-  border-radius: 24px;
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 6px;
-  padding: 8px;
-  box-shadow: var(--shadow);
-  margin: 10px auto 65px auto; /* താഴെ 65px സ്ഥലം ബാനർ ആഡിനായി നൽകി ബോർഡിനെ മുകളിലേക്ക് കയറ്റുന്നു */
-}
+    #board-frame {
+      width: 100%;
+      max-width: 360px;
+      height: 54vh;
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(12px);
+      border: 1.5px solid rgba(255, 255, 255, 0.8);
+      border-radius: 24px;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+      padding: 8px;
+      box-shadow: var(--shadow);
+      margin: 10px auto 65px auto;
+    }
 
     .col-track {
       display: grid;
@@ -446,7 +446,7 @@
     </div>
   </div>
 
-  <!-- BOARD / COLUMN FULL MODAL (CONTINUE WITH AD OR RESTART WITH LIFE) -->
+  <!-- BOARD / COLUMN FULL MODAL -->
   <div class="modal" id="board-full-modal">
     <div class="modal-card">
       <h2 style="font-size:22px; color:#ef4444; margin-bottom:8px;">No More Moves!</h2>
@@ -600,20 +600,20 @@
       }
     };
 
-    // --- ADMOB CONTROLLER ---
+    // --- ADMOB CONTROLLER (LIVE PRODUCTION IDS) ---
     const AdMobManager = {
       initialized: false,
       timerInterval: null,
       continuousSeconds: 0,
-      bannerId: 'ca-app-pub-3940256099942544/6300978111',
-      interstitialId: 'ca-app-pub-3940256099942544/1033173712',
-      rewardedId: 'ca-app-pub-3940256099942544/5224354917',
+      bannerId: 'ca-app-pub-6051259731219737/5446033178',
+      interstitialId: 'ca-app-pub-6051259731219737/2819869839',
+      rewardedId: 'ca-app-pub-6051259731219737/1004970146',
 
       async init() {
         if (window.Capacitor && window.Capacitor.isPluginAvailable('AdMob')) {
           try {
             const { AdMob } = window.Capacitor.Plugins;
-            await AdMob.initialize({ initializeForTesting: true });
+            await AdMob.initialize({});
             this.initialized = true;
             
             setTimeout(() => {
@@ -635,7 +635,7 @@
             adSize: 'BANNER',
             position: 'BOTTOM_CENTER',
             margin: 0,
-            isTesting: true
+            isTesting: false
           });
         } catch(e) {
           console.error('Show banner error:', e);
@@ -648,7 +648,7 @@
           const { AdMob } = window.Capacitor.Plugins;
           await AdMob.prepareInterstitial({ 
             adId: this.interstitialId, 
-            isTesting: true 
+            isTesting: false 
           });
         } catch(e) {
           console.error('Prepare interstitial error:', e);
@@ -675,7 +675,7 @@
           const { AdMob } = window.Capacitor.Plugins;
           await AdMob.prepareRewardVideoAd({ 
             adId: this.rewardedId, 
-            isTesting: true 
+            isTesting: false 
           });
           const reward = await AdMob.showRewardVideoAd();
           if (reward) onSuccess();
@@ -856,7 +856,7 @@
         }
       }
 
-      // തിരഞ്ഞെടുത്ത കോളത്തിൽ സ്ഥലമില്ലെങ്കിൽ
+      // Column full check
       if (targetRow === -1) {
         showBoardFullPrompt();
         return;
@@ -1074,7 +1074,7 @@
       showScreen('home-screen');
     };
 
-    // ആഡ് കണ്ട് മുകളിലെ 2 റോകൾ ക്ലിയർ ചെയ്ത് കളി തുടരാൻ
+    // Watch Ad to Clear 2 Rows
     document.getElementById('revive-clear-rows-btn').onclick = () => {
       AdMobManager.showRewarded(() => {
         document.getElementById('board-full-modal').classList.remove('active');
@@ -1089,7 +1089,7 @@
       });
     };
 
-    // ആഡ് കാണാതെ 1 ലൈഫ് ഉപയോഗിച്ച് പുതിയ കളി തുടങ്ങാൻ
+    // Restart using 1 life
     document.getElementById('restart-lose-life-btn').onclick = () => {
       document.getElementById('board-full-modal').classList.remove('active');
       const hasLife = LifeManager.consumeLife();
@@ -1100,7 +1100,7 @@
       }
     };
 
-    // ലൈഫ് തീർന്നുപോയാൽ ആഡ് കണ്ട് ലൈഫ് റീഫിൽ ചെയ്യാൻ
+    // Refill life via rewarded ad
     function triggerAdRefill() {
       AdMobManager.showRewarded(() => {
         LifeManager.addLife();
