@@ -38,40 +38,40 @@ jobs:
           mkdir -p www
           cp index.html www/
 
-      - name: Initialize Capacitor App & AdMob Plugin
+      - name: Initialize Capacitor App & Install Capacitor Unity Ads Bridge
         run: |
           npm init -y
-          npm install @capacitor/core @capacitor/cli @capacitor/android @capacitor-community/admob
+          npm install @capacitor/core @capacitor/cli @capacitor/android
+          npm install capacitor-unity-ads || true
           npx cap init "Drop 2048" "com.games.drop2048" --web-dir "www"
           npx cap add android
 
-      - name: Bump Version Code to 4 & Version Name to 1.0.3
+      - name: Bump Version Code to 5 & Version Name to 1.0.4
         run: |
           python3 - << 'EOF'
           gradle_path = "android/app/build.gradle"
           with open(gradle_path, 'r') as f:
               content = f.read()
-          content = content.replace("versionCode 1", "versionCode 4")
-          content = content.replace('versionName "1.0"', 'versionName "1.0.3"')
+          content = content.replace("versionCode 1", "versionCode 5")
+          content = content.replace('versionName "1.0"', 'versionName "1.0.4"')
           with open(gradle_path, 'w') as f:
               f.write(content)
           EOF
 
-      - name: Inject AdMob App ID into AndroidManifest.xml
+      - name: Add Unity Ads SDK Dependency to build.gradle
         run: |
           python3 - << 'EOF'
-          manifest_path = "android/app/src/main/AndroidManifest.xml"
-          with open(manifest_path, 'r') as f:
+          gradle_path = "android/app/build.gradle"
+          with open(gradle_path, 'r') as f:
               content = f.read()
-
-          admob_meta = """
-                  <meta-data
-                      android:name="com.google.android.gms.ads.APPLICATION_ID"
-                      android:value="ca-app-pub-6051259731219737~9249546816"/>
+          
+          unity_dep = """
+          dependencies {
+              implementation 'com.unity3d.ads:unity-ads:4.12.5'
           """
-          if "APPLICATION_ID" not in content:
-              content = content.replace("</application>", f"{admob_meta}\n    </application>")
-              with open(manifest_path, 'w') as f:
+          if "com.unity3d.ads:unity-ads" not in content:
+              content = content.replace("dependencies {", unity_dep)
+              with open(gradle_path, 'w') as f:
                   f.write(content)
           EOF
 
