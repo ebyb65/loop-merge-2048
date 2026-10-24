@@ -600,87 +600,99 @@
       }
     };
 
-    // --- ADMOB CONTROLLER (LIVE PRODUCTION IDS) ---
-    const AdMobManager = {
+    // --- UNITY ADS CONTROLLER ---
+    const UnityAdsManager = {
+      gameId: '800409725',
+      testMode: false,
+      bannerId: 'BP_Banner_Android',
+      interstitialId: 'BP_Interstitial_Android',
+      rewardedId: 'BP_Rewarded_Android',
       initialized: false,
       timerInterval: null,
       continuousSeconds: 0,
-      bannerId: 'ca-app-pub-6051259731219737/5446033178',
-      interstitialId: 'ca-app-pub-6051259731219737/2819869839',
-      rewardedId: 'ca-app-pub-6051259731219737/1004970146',
 
       async init() {
-        if (window.Capacitor && window.Capacitor.isPluginAvailable('AdMob')) {
+        const plugin = (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.UnityAds) 
+                       || window.unityads 
+                       || (window.cordova && window.cordova.plugins && window.cordova.plugins.unityads);
+
+        if (plugin) {
           try {
-            const { AdMob } = window.Capacitor.Plugins;
-            await AdMob.initialize({});
+            if (plugin.initialize) {
+              await plugin.initialize({ gameId: this.gameId, testMode: this.testMode });
+            } else if (plugin.init) {
+              plugin.init(this.gameId, this.testMode);
+            }
             this.initialized = true;
-            
-            setTimeout(() => {
-              this.showBanner();
-              this.prepareInterstitial();
-            }, 1000);
+            this.showBanner();
           } catch(e) {
-            console.error('AdMob init error:', e);
+            console.error('Unity Ads init error:', e);
           }
         }
       },
 
-      async showBanner() {
-        if (!this.initialized) return;
+      showBanner() {
+        const plugin = (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.UnityAds) 
+                       || window.unityads 
+                       || (window.cordova && window.cordova.plugins && window.cordova.plugins.unityads);
+        if (!plugin) return;
+
         try {
-          const { AdMob } = window.Capacitor.Plugins;
-          await AdMob.showBanner({
-            adId: this.bannerId,
-            adSize: 'BANNER',
-            position: 'BOTTOM_CENTER',
-            margin: 0,
-            isTesting: false
-          });
+          if (plugin.showBanner) {
+            plugin.showBanner({ placementId: this.bannerId, position: 'bottom' });
+          } else if (plugin.loadBanner) {
+            plugin.loadBanner(this.bannerId, 'bottom');
+          }
         } catch(e) {
-          console.error('Show banner error:', e);
+          console.error('Unity Ads showBanner error:', e);
         }
       },
 
-      async prepareInterstitial() {
-        if (!this.initialized) return;
-        try {
-          const { AdMob } = window.Capacitor.Plugins;
-          await AdMob.prepareInterstitial({ 
-            adId: this.interstitialId, 
-            isTesting: false 
-          });
-        } catch(e) {
-          console.error('Prepare interstitial error:', e);
-        }
-      },
+      showInterstitial() {
+        const plugin = (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.UnityAds) 
+                       || window.unityads 
+                       || (window.cordova && window.cordova.plugins && window.cordova.plugins.unityads);
+        if (!plugin) return;
 
-      async showInterstitial() {
-        if (!this.initialized) return;
         try {
-          const { AdMob } = window.Capacitor.Plugins;
-          await AdMob.showInterstitial();
-          this.prepareInterstitial();
+          if (plugin.showInterstitial) {
+            plugin.showInterstitial({ placementId: this.interstitialId });
+          } else if (plugin.showVideo) {
+            plugin.showVideo(this.interstitialId);
+          }
         } catch(e) {
-          console.error('Show interstitial error:', e);
+          console.error('Unity Ads showInterstitial error:', e);
         }
       },
 
       async showRewarded(onSuccess) {
-        if (!this.initialized) {
-          setTimeout(onSuccess, 800);
+        const plugin = (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.UnityAds) 
+                       || window.unityads 
+                       || (window.cordova && window.cordova.plugins && window.cordova.plugins.unityads);
+
+        if (!plugin) {
+          setTimeout(onSuccess, 600);
           return;
         }
+
         try {
-          const { AdMob } = window.Capacitor.Plugins;
-          await AdMob.prepareRewardVideoAd({ 
-            adId: this.rewardedId, 
-            isTesting: false 
-          });
-          const reward = await AdMob.showRewardVideoAd();
-          if (reward) onSuccess();
+          if (plugin.showRewarded) {
+            const res = await plugin.showRewarded({ placementId: this.rewardedId });
+            if (res && res.completed !== false) {
+              onSuccess();
+            }
+          } else if (plugin.showVideo) {
+            plugin.showVideo(this.rewardedId, () => {
+              onSuccess();
+            }, (err) => {
+              console.error('Unity Ads rewarded error:', err);
+              onSuccess();
+            });
+          } else {
+            onSuccess();
+          }
         } catch(e) {
-          console.error('Show rewarded error:', e);
+          console.error('Unity Ads showRewarded error:', e);
           onSuccess();
         }
       },
@@ -825,7 +837,7 @@
       isProcessing = false;
       rollNextValue();
       renderBoard();
-      AdMobManager.startLoopTimer();
+      UnityAdsManager.startLoopTimer();
     }
 
     function rollNextValue() {
@@ -856,7 +868,6 @@
         }
       }
 
-      // Column full check
       if (targetRow === -1) {
         showBoardFullPrompt();
         return;
@@ -891,7 +902,7 @@
     }
 
     function showBoardFullPrompt() {
-      AdMobManager.pauseLoopTimer();
+      UnityAdsManager.pauseLoopTimer();
       isProcessing = false;
       document.getElementById('board-full-modal').classList.add('active');
     }
@@ -1043,7 +1054,7 @@
         return;
       }
       Sound.init();
-      AdMobManager.init();
+      UnityAdsManager.init();
       showScreen('game-screen');
       initGame();
     };
@@ -1057,11 +1068,11 @@
     };
 
     document.getElementById('pause-btn').onclick = () => {
-      AdMobManager.pauseLoopTimer();
+      UnityAdsManager.pauseLoopTimer();
       document.getElementById('pause-modal').classList.add('active');
     };
     document.getElementById('resume-btn').onclick = () => {
-      AdMobManager.startLoopTimer();
+      UnityAdsManager.startLoopTimer();
       document.getElementById('pause-modal').classList.remove('active');
     };
     document.getElementById('restart-btn').onclick = () => {
@@ -1069,14 +1080,14 @@
       initGame();
     };
     document.getElementById('home-btn').onclick = () => {
-      AdMobManager.pauseLoopTimer();
+      UnityAdsManager.pauseLoopTimer();
       document.getElementById('pause-modal').classList.remove('active');
       showScreen('home-screen');
     };
 
     // Watch Ad to Clear 2 Rows
     document.getElementById('revive-clear-rows-btn').onclick = () => {
-      AdMobManager.showRewarded(() => {
+      UnityAdsManager.showRewarded(() => {
         document.getElementById('board-full-modal').classList.remove('active');
         for (let r = 0; r < 2; r++) {
           for (let c = 0; c < COLS; c++) {
@@ -1085,7 +1096,7 @@
         }
         applySmoothGravity();
         renderBoard();
-        AdMobManager.startLoopTimer();
+        UnityAdsManager.startLoopTimer();
       });
     };
 
@@ -1102,7 +1113,7 @@
 
     // Refill life via rewarded ad
     function triggerAdRefill() {
-      AdMobManager.showRewarded(() => {
+      UnityAdsManager.showRewarded(() => {
         LifeManager.addLife();
         document.getElementById('over-modal').classList.remove('active');
         document.getElementById('pause-modal').classList.remove('active');
@@ -1120,6 +1131,7 @@
 
     window.addEventListener('load', () => {
       LifeManager.init();
+      UnityAdsManager.init();
     });
   </script>
 </body>
