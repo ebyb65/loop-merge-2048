@@ -46,14 +46,14 @@ jobs:
           npx cap init "Drop 2048" "com.games.drop2048" --web-dir "www"
           npx cap add android
 
-      - name: Bump Version Code to 6 & Version Name to 1.0.5
+      - name: Bump Version Code to 7 & Version Name to 1.0.6
         run: |
           python3 - << 'EOF'
           gradle_path = "android/app/build.gradle"
           with open(gradle_path, 'r') as f:
               content = f.read()
-          content = content.replace("versionCode 1", "versionCode 6")
-          content = content.replace('versionName "1.0"', 'versionName "1.0.5"')
+          content = content.replace("versionCode 1", "versionCode 7")
+          content = content.replace('versionName "1.0"', 'versionName "1.0.6"')
           with open(gradle_path, 'w') as f:
               f.write(content)
           EOF
@@ -144,6 +144,13 @@ jobs:
           name: Drop2048-PlayStore-AAB
           path: android/app/build/outputs/bundle/release/app-release.aab
           retention-days: 14
+
+      - name: Upload Direct Test APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Drop2048-Test-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 7
 
       - name: Export PEM Certificate for Play Console Reset
         run: |
