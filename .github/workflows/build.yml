@@ -42,18 +42,18 @@ jobs:
         run: |
           npm init -y
           npm install @capacitor/core @capacitor/cli @capacitor/android
-          npm install capacitor-unity-ads || true
+          npm install capacitor-unity-ads
           npx cap init "Drop 2048" "com.games.drop2048" --web-dir "www"
           npx cap add android
 
-      - name: Bump Version Code to 5 & Version Name to 1.0.4
+      - name: Bump Version Code to 6 & Version Name to 1.0.5
         run: |
           python3 - << 'EOF'
           gradle_path = "android/app/build.gradle"
           with open(gradle_path, 'r') as f:
               content = f.read()
-          content = content.replace("versionCode 1", "versionCode 5")
-          content = content.replace('versionName "1.0"', 'versionName "1.0.4"')
+          content = content.replace("versionCode 1", "versionCode 6")
+          content = content.replace('versionName "1.0"', 'versionName "1.0.5"')
           with open(gradle_path, 'w') as f:
               f.write(content)
           EOF
