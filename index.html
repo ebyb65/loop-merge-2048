@@ -643,24 +643,32 @@
       },
 
       async init() {
+        if (this.initialized) return;
         const plugin = this.getPlugin();
         if (!plugin) {
-          logToScreen('<span style="color:#f59e0b">⚠️ Unity Plugin Bridge Unavailable in window</span>');
+          logToScreen('<span style="color:#f59e0b">⚠️ Unity Plugin Bridge Unavailable</span>');
           return;
         }
 
-        logToScreen('✔ Plugin detected. Initializing Unity Ads...');
+        logToScreen('✔ Initializing Unity SDK...');
         try {
           if (plugin.initialize) {
-            await plugin.initialize({ gameId: this.gameId, testMode: this.testMode });
+            await plugin.initialize({ gameId: this.gameId, testMode: true });
           } else if (plugin.init) {
-            plugin.init(this.gameId, this.testMode);
+            plugin.init(this.gameId, true);
           }
           this.initialized = true;
-          logToScreen('✔ Unity Ads Initialized (Game ID: ' + this.gameId + ')');
+          logToScreen('✔ Unity SDK Initialized');
 
-          this.showBanner();
-          this.preloadAds();
+          // Initialize പൂർത്തിയായ ശേഷം 2 സെക്കൻഡ് കഴിഞ്ഞ് മാത്രം ഓരോന്നായി ലോഡ് ചെയ്യുക
+          setTimeout(() => {
+            this.showBanner();
+          }, 2000);
+
+          setTimeout(() => {
+            this.preloadAds();
+          }, 3500);
+
         } catch(e) {
           logToScreen('<span style="color:#ef4444">❌ Init Error: ' + JSON.stringify(e) + '</span>');
         }
@@ -670,53 +678,56 @@
         const plugin = this.getPlugin();
         if (!plugin || !this.initialized) return;
 
+        // 1. Rewarded Ad Preload
         try {
+          logToScreen('⌛ Preloading Rewarded Ad...');
           if (plugin.loadRewardedVideo) {
-            logToScreen('⌛ Preloading Rewarded Video...');
             await plugin.loadRewardedVideo({ placementId: this.rewardedId });
             this.isRewardedReady = true;
-            logToScreen('✔ Rewarded Video Loaded');
+            logToScreen('✔ Rewarded Ready');
+          } else if (plugin.loadRewardVideo) {
+            await plugin.loadRewardVideo({ placementId: this.rewardedId });
+            this.isRewardedReady = true;
+            logToScreen('✔ Rewarded Ready');
           }
         } catch(e) {
-          logToScreen('⚠️ Rewarded Preload Failed: ' + JSON.stringify(e));
+          logToScreen('⚠️ Rewarded Preload: ' + (e.message || JSON.stringify(e)));
         }
 
-        try {
-          if (plugin.loadInterstitial) {
+        // 2. Interstitial Ad Preload (Rewarded കഴിഞ്ഞ് 1.5 സെക്കൻഡിന് ശേഷം മാത്രം)
+        setTimeout(async () => {
+          try {
             logToScreen('⌛ Preloading Interstitial...');
-            await plugin.loadInterstitial({ placementId: this.interstitialId });
-            this.isInterstitialReady = true;
-            logToScreen('✔ Interstitial Loaded');
+            if (plugin.loadInterstitial) {
+              await plugin.loadInterstitial({ placementId: this.interstitialId });
+              this.isInterstitialReady = true;
+              logToScreen('✔ Interstitial Ready');
+            }
+          } catch(e) {
+            logToScreen('⚠️ Interstitial Preload: ' + (e.message || JSON.stringify(e)));
           }
-        } catch(e) {
-          logToScreen('⚠️ Interstitial Preload Failed: ' + JSON.stringify(e));
-        }
+        }, 1500);
       },
 
       showBanner() {
         const plugin = this.getPlugin();
-        if (!plugin) return;
+        if (!plugin || !this.initialized) return;
 
         try {
-          logToScreen('⌛ Requesting Banner Display...');
+          logToScreen('⌛ Loading Banner: ' + this.bannerId);
           if (plugin.showBanner) {
             plugin.showBanner({ placementId: this.bannerId, position: 'bottom' });
-            logToScreen('✔ Banner Requested: ' + this.bannerId);
           } else if (plugin.loadBanner) {
             plugin.loadBanner(this.bannerId, 'bottom');
-            logToScreen('✔ Banner Loaded: ' + this.bannerId);
           }
         } catch(e) {
-          logToScreen('<span style="color:#ef4444">❌ Banner Error: ' + JSON.stringify(e) + '</span>');
+          logToScreen('<span style="color:#ef4444">❌ Banner Error: ' + (e.message || JSON.stringify(e)) + '</span>');
         }
       },
 
       async showInterstitial() {
         const plugin = this.getPlugin();
-        if (!plugin || !this.initialized) {
-          logToScreen('⚠️ Cannot show Interstitial: Plugin not ready');
-          return;
-        }
+        if (!plugin || !this.initialized) return;
 
         try {
           logToScreen('▶ Showing Interstitial Ad...');
@@ -725,52 +736,48 @@
           } else if (plugin.showVideo) {
             plugin.showVideo(this.interstitialId);
           }
-          logToScreen('✔ Interstitial shown');
-          this.preloadAds();
+          logToScreen('✔ Interstitial Closed');
+          setTimeout(() => this.preloadAds(), 2000);
         } catch(e) {
-          logToScreen('<span style="color:#ef4444">❌ Interstitial Error: ' + JSON.stringify(e) + '</span>');
-          this.preloadAds();
+          logToScreen('<span style="color:#ef4444">❌ Interstitial Error: ' + (e.message || JSON.stringify(e)) + '</span>');
+          setTimeout(() => this.preloadAds(), 2000);
         }
       },
 
       async showRewarded(onSuccess) {
-        logToScreen('▶ User clicked Rewarded Ad...');
+        logToScreen('▶ Requesting Rewarded Ad...');
         const plugin = this.getPlugin();
         if (!plugin || !this.initialized) {
-          logToScreen('⚠️ Plugin not ready. Falling back in 500ms...');
+          logToScreen('⚠️ Plugin not ready. Granting reward fallback...');
           setTimeout(onSuccess, 500);
           return;
         }
 
         try {
+          let res = null;
           if (plugin.showRewardedVideo) {
-            const res = await plugin.showRewardedVideo({ placementId: this.rewardedId });
-            logToScreen('✔ Rewarded Ad Result: ' + JSON.stringify(res));
-            if (res && res.completed !== false) {
-              onSuccess();
-            }
+            res = await plugin.showRewardedVideo({ placementId: this.rewardedId });
           } else if (plugin.showRewarded) {
-            const res = await plugin.showRewarded({ placementId: this.rewardedId });
-            logToScreen('✔ Rewarded Ad Result: ' + JSON.stringify(res));
-            if (res && res.completed !== false) {
-              onSuccess();
-            }
+            res = await plugin.showRewarded({ placementId: this.rewardedId });
           } else if (plugin.showVideo) {
             plugin.showVideo(this.rewardedId, () => {
-              logToScreen('✔ Video Finished');
+              logToScreen('✔ Rewarded Finished');
               onSuccess();
             }, (err) => {
-              logToScreen('<span style="color:#ef4444">❌ Video Error: ' + JSON.stringify(err) + '</span>');
+              logToScreen('⚠️ Video Error: ' + (err.message || JSON.stringify(err)));
               onSuccess();
             });
-          } else {
-            onSuccess();
+            setTimeout(() => this.preloadAds(), 2000);
+            return;
           }
-          this.preloadAds();
-        } catch(e) {
-          logToScreen('<span style="color:#ef4444">❌ Rewarded Show Error: ' + JSON.stringify(e) + '</span>');
+
+          logToScreen('✔ Rewarded Shown: ' + JSON.stringify(res));
           onSuccess();
-          this.preloadAds();
+          setTimeout(() => this.preloadAds(), 2000);
+        } catch(e) {
+          logToScreen('<span style="color:#ef4444">❌ Rewarded Error: ' + (e.message || JSON.stringify(e)) + '</span>');
+          onSuccess();
+          setTimeout(() => this.preloadAds(), 2000);
         }
       },
 
