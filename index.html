@@ -680,35 +680,35 @@
 
         // 1. Rewarded Ad Preload
         try {
-          logToScreen('⌛ Preloading Rewarded Ad...');
+          logToScreen('⌛ Preloading: ' + this.rewardedId);
           if (plugin.loadRewardedVideo) {
             await plugin.loadRewardedVideo({ placementId: this.rewardedId });
             this.isRewardedReady = true;
-            logToScreen('✔ Rewarded Ready');
+            logToScreen('✔ ' + this.rewardedId + ' Ready');
           } else if (plugin.loadRewardVideo) {
             await plugin.loadRewardVideo({ placementId: this.rewardedId });
             this.isRewardedReady = true;
-            logToScreen('✔ Rewarded Ready');
+            logToScreen('✔ ' + this.rewardedId + ' Ready');
           }
         } catch(e) {
-          logToScreen('⚠️ Rewarded Preload: ' + (e.message || JSON.stringify(e)));
+          logToScreen('⚠️ ' + this.rewardedId + ' Preload: ' + (e.message || JSON.stringify(e)));
         }
 
-        // 2. Interstitial Ad Preload (Rewarded കഴിഞ്ഞ് 1.5 സെക്കൻഡിന് ശേഷം മാത്രം)
+        // 2. Interstitial Ad Preload
         setTimeout(async () => {
           try {
-            logToScreen('⌛ Preloading Interstitial...');
+            logToScreen('⌛ Preloading: ' + this.interstitialId);
             if (plugin.loadInterstitial) {
               await plugin.loadInterstitial({ placementId: this.interstitialId });
               this.isInterstitialReady = true;
-              logToScreen('✔ Interstitial Ready');
+              logToScreen('✔ ' + this.interstitialId + ' Ready');
             }
           } catch(e) {
-            logToScreen('⚠️ Interstitial Preload: ' + (e.message || JSON.stringify(e)));
+            logToScreen('⚠️ ' + this.interstitialId + ' Preload: ' + (e.message || JSON.stringify(e)));
           }
         }, 1500);
       },
-
+      
       showBanner() {
         const plugin = this.getPlugin();
         if (!plugin || !this.initialized) return;
