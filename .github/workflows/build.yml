@@ -5,6 +5,9 @@ on:
     branches: [ "main" ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -64,7 +67,6 @@ jobs:
           gradle_path = "android/app/build.gradle"
           with open(gradle_path, 'r') as f:
               content = f.read()
-          
           unity_dep = """
           dependencies {
               implementation 'com.unity3d.ads:unity-ads:4.12.5'
@@ -80,24 +82,14 @@ jobs:
           python3 - << 'EOF'
           import os
           from PIL import Image, ImageDraw
-
           size = (512, 512)
           img = Image.new('RGBA', size, (248, 250, 252, 255))
           draw = ImageDraw.Draw(img)
-
           draw.rounded_rectangle([30, 30, 482, 482], radius=110, fill=(255, 255, 255, 255), outline=(79, 70, 229, 255), width=8)
           draw.rounded_rectangle([186, 75, 326, 215], radius=28, fill=(245, 158, 11, 255))
           draw.polygon([(256, 240), (236, 220), (276, 220)], fill=(79, 70, 229, 230))
           draw.rounded_rectangle([136, 250, 376, 430], radius=40, fill=(79, 70, 229, 255))
-
-          densities = {
-              'mipmap-mdpi': 48,
-              'mipmap-hdpi': 72,
-              'mipmap-xhdpi': 96,
-              'mipmap-xxhdpi': 144,
-              'mipmap-xxxhdpi': 192
-          }
-
+          densities = {'mipmap-mdpi': 48, 'mipmap-hdpi': 72, 'mipmap-xhdpi': 96, 'mipmap-xxhdpi': 144, 'mipmap-xxxhdpi': 192}
           base_res = "android/app/src/main/res"
           for folder, px in densities.items():
               target_dir = os.path.join(base_res, folder)
@@ -106,7 +98,6 @@ jobs:
               resized.save(os.path.join(target_dir, 'ic_launcher.png'))
               resized.save(os.path.join(target_dir, 'ic_launcher_round.png'))
               resized.save(os.path.join(target_dir, 'ic_launcher_foreground.png'))
-
               for xml_name in ['ic_launcher.xml', 'ic_launcher_round.xml']:
                   xml_path = os.path.join(target_dir, xml_name)
                   if os.path.exists(xml_path):
@@ -130,7 +121,10 @@ jobs:
         env:
           KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
         run: |
-          echo "$KEYSTORE_BASE64" | base64 -d > android/release-key.jks
+          set -euo pipefail
+          test -n "${KEYSTORE_BASE64:-}" || { echo "::error::RELEASE_KEYSTORE_BASE64 is not configured"; exit 1; }
+          umask 077
+          printf '%s' "$KEYSTORE_BASE64" | base64 -d > android/release-key.jks
 
       - name: Build Android Release Bundle (AAB) & APK
         run: |
@@ -138,9 +132,21 @@ jobs:
           chmod +x gradlew
           ./gradlew bundleRelease assembleDebug --no-daemon
 
-      - name: Sign Android App Bundle (AAB) with Original Key
+      - name: Sign Android App Bundle (AAB)
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
         run: |
-          jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore android/release-key.jks -storepass drop2048pass -keypass drop2048pass android/app/build/outputs/bundle/release/app-release.aab drop2048
+          set -euo pipefail
+          for required in KEYSTORE_PASSWORD KEY_PASSWORD KEY_ALIAS; do
+            test -n "${!required:-}" || { echo "::error::$required is not configured"; exit 1; }
+          done
+          jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 \
+            -keystore android/release-key.jks \
+            -storepass:env KEYSTORE_PASSWORD \
+            -keypass:env KEY_PASSWORD \
+            android/app/build/outputs/bundle/release/app-release.aab "$KEY_ALIAS"
 
       - name: Upload Play Store AAB Bundle
         uses: actions/upload-artifact@v4
@@ -157,8 +163,13 @@ jobs:
           retention-days: 7
 
       - name: Export PEM Certificate for Play Console Reset
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
         run: |
-          keytool -export -rfc -keystore android/release-key.jks -alias drop2048 -storepass drop2048pass -file upload_certificate.pem
+          set -euo pipefail
+          keytool -export -rfc -keystore android/release-key.jks -alias "$KEY_ALIAS" \
+            -storepass:env KEYSTORE_PASSWORD -file upload_certificate.pem
 
       - name: Upload PEM Certificate
         uses: actions/upload-artifact@v4
@@ -166,3 +177,7 @@ jobs:
           name: upload-certificate-pem
           path: upload_certificate.pem
           retention-days: 7
+
+      - name: Clean up signing material
+        if: always()
+        run: rm -f android/release-key.jks upload_certificate.pem
