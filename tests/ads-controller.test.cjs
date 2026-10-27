@@ -3,7 +3,6 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
-
 const root = path.join(__dirname, '..');
 const source = fs.readFileSync(path.join(root, 'ads-controller.js'), 'utf8');
 
@@ -14,57 +13,48 @@ function deferred() {
 }
 
 function setup(overrides = {}, native = true) {
-  const calls = { init: [], load: 0, show: 0, interstitial: 0 };
+  const calls = { init: [], load: [], show: [] };
+  const listeners = {};
+  const ready = {};
   const messages = [];
   const alerts = [];
   const plugin = {
+    addListener: async (name, fn) => { listeners[name] = fn; return { remove: async () => {} }; },
     initialize: async options => { calls.init.push(options); },
-    isRewardedVideoLoaded: async () => ({ loaded: false }),
-    isInterstitialLoaded: async () => ({ loaded: false }),
-    loadRewardedVideo: async () => { calls.load++; },
-    loadInterstitial: async () => {},
-    showRewardedVideo: async () => { calls.show++; return { success: true }; },
-    showInterstitial: async () => { calls.interstitial++; return { success: true }; },
+    isReady: async ({ adUnitId }) => ({ ready: !!ready[adUnitId] }),
+    loadRewarded: async ({ adUnitId }) => {
+      calls.load.push(adUnitId);
+      setImmediate(() => { ready[adUnitId] = true; listeners.loaded({ format: 'rewarded', adUnitId }); });
+    },
+    loadInterstitial: async ({ adUnitId }) => {
+      calls.load.push(adUnitId);
+      setImmediate(() => { ready[adUnitId] = true; listeners.loaded({ format: 'interstitial', adUnitId }); });
+    },
+    showRewarded: async ({ adUnitId }) => { calls.show.push(adUnitId); ready[adUnitId] = false; return { shown: true, rewarded: true }; },
+    showInterstitial: async ({ adUnitId }) => { calls.show.push(adUnitId); ready[adUnitId] = false; return { shown: true, rewarded: false }; },
     ...overrides
   };
   const context = vm.createContext({
-    window: { Capacitor: native ? { Plugins: { Unityads: plugin } } : undefined,
-      alert: message => alerts.push(message) },
-    logToScreen: message => messages.push(message),
-    setInterval: () => 1,
-    clearInterval: () => {},
-    document: { getElementById: () => ({ style: {} }) }
+    window: { Capacitor: native ? { Plugins: { LevelPlay: plugin } } : undefined, alert: m => alerts.push(m) },
+    logToScreen: m => messages.push(m),
+    setInterval: () => 1, clearInterval: () => {}, setTimeout, clearTimeout,
+    document: { hidden: false, getElementById: () => ({ style: {} }) }
   });
   vm.runInContext(source + '\nthis.manager = UnityAdsManager;', context);
-  return { manager: context.manager, plugin, calls, messages, alerts };
+  return { manager: context.manager, plugin, calls, listeners, ready, messages, alerts };
 }
 
-test('one native initialization for concurrent callers; configured test mode is passed', async () => {
+test('coalesces initialization and does not claim personalized-ad consent', async () => {
   const wait = deferred();
-  let count = 0;
-  const { manager } = setup({ initialize: async options => {
-    count++;
-    assert.equal(options.testMode, false);
-    await wait.promise;
-  } });
-  manager.testMode = false;
-  const first = manager.init();
-  const second = manager.init();
-  assert.equal(count, 1);
+  let calls = 0;
+  const { manager } = setup({ initialize: async o => { calls++; assert.equal(o.consent.gdprConsent, false); await wait.promise; } });
+  const a = manager.init(), b = manager.init();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(calls, 1);
   wait.resolve();
-  assert.deepEqual(await Promise.all([first, second]), [true, true]);
-});
-
-test('failed initialization can be retried without granting a reward', async () => {
-  let count = 0;
-  const { manager } = setup({ initialize: async () => {
-    if (++count === 1) throw new Error('offline');
-  } });
-  let rewards = 0;
-  await manager.showRewarded(() => rewards++);
-  assert.equal(rewards, 0);
-  assert.equal(manager.initialized, false);
-  assert.equal(await manager.init(), true);
+  assert.equal(await a, true);
+  assert.equal(await b, true);
+  await manager.preloadAds();
 });
 
 test('missing native bridge never grants a reward', async () => {
@@ -75,97 +65,98 @@ test('missing native bridge never grants a reward', async () => {
   assert.equal(alerts.length, 1);
 });
 
-test('a load failure prevents showing and does not grant a reward', async () => {
-  const { manager, calls } = setup({ loadRewardedVideo: async () => { throw new Error('no fill'); } });
-  let rewards = 0;
-  await manager.showRewarded(() => rewards++);
-  assert.equal(rewards, 0);
-  assert.equal(calls.show, 0);
-});
-
-test('bidding mismatch is diagnosed and not retried; interstitial still loads', async () => {
-  let attempts = 0;
-  let interstitialLoads = 0;
-  const { manager, messages } = setup({
-    loadRewardedVideo: async () => {
-      attempts++;
-      throw new Error('adMarkup is missing; objectId is missing');
-    },
-    loadInterstitial: async () => { interstitialLoads++; }
-  });
-  await manager.init();
-  await manager.preloadAds();
-  await manager.showRewarded(() => assert.fail('unexpected reward'));
-  assert.equal(attempts, 1);
-  assert.ok(interstitialLoads > 0);
-  assert.ok(messages.some(message => message.includes('CONFIGURATION:')));
-});
-
-for (const result of [{ success: false }, undefined, {}]) {
-  test('incomplete/missing completion result never grants a reward: ' + JSON.stringify(result), async () => {
-    const { manager } = setup({ showRewardedVideo: async () => result });
-    let rewards = 0;
-    await manager.showRewarded(() => rewards++);
-    assert.equal(rewards, 0);
-  });
-}
-
-test('show error does not grant a reward and releases the tap lock', async () => {
-  const { manager } = setup({ showRewardedVideo: async () => { throw new Error('show failed'); } });
-  await manager.showRewarded(() => assert.fail('unexpected reward'));
-  assert.equal(manager.rewardInProgress, false);
-});
-
-test('waits for load before show and deduplicates a second tap', async () => {
-  const load = deferred();
+test('waits for the matching loaded event; a duplicate tap cannot grant twice', async () => {
+  const gate = deferred();
   const show = deferred();
-  let shows = 0;
-  const { manager } = setup({
-    loadRewardedVideo: () => load.promise,
-    showRewardedVideo: () => { shows++; return show.promise; }
+  let rewardedShows = 0;
+  const { manager, listeners } = setup({
+    loadRewarded: () => gate.promise,
+    showRewarded: () => { rewardedShows++; return show.promise; }
   });
   let rewards = 0;
   const first = manager.showRewarded(() => rewards++);
-  await manager.showRewarded(() => rewards++);
-  assert.equal(shows, 0);
-  load.resolve();
   await new Promise(resolve => setImmediate(resolve));
-  assert.equal(shows, 1);
-  assert.equal(rewards, 0);
-  show.resolve({ success: true });
+  await manager.showRewarded(() => rewards++);
+  assert.equal(rewardedShows, 0);
+  listeners.loaded({ format: 'rewarded', adUnitId: 'unrelated' });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(rewardedShows, 0);
+  gate.resolve();
+  listeners.loaded({ format: 'rewarded', adUnitId: manager.rewardedId });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(rewardedShows, 1);
+  show.resolve({ shown: false, rewarded: true });
   await first;
   assert.equal(rewards, 1);
-  assert.equal(manager.rewardInProgress, false);
 });
 
-test('each subsequent reward checks native readiness and can load a fresh ad', async () => {
-  const { manager, calls } = setup();
+test('a failed ad load does not grant rewards', async () => {
+  let state;
+  const setupState = setup({ loadRewarded: async ({ adUnitId }) => {
+    setImmediate(() => state.listeners.loadFailed({ format: 'rewarded', adUnitId, error: { message: 'no fill' } }));
+  }});
+  state = setupState;
   let rewards = 0;
-  await manager.showRewarded(() => rewards++);
-  await manager.showRewarded(() => rewards++);
+  await state.manager.showRewarded(() => rewards++);
+  assert.equal(rewards, 0);
+  assert.equal(state.calls.show.length, 0);
+  assert.ok(state.alerts.length > 0);
+});
+
+test('timed-out requests release the load lock and permit a later retry', async () => {
+  const s = setup({ loadRewarded: async () => {} });
+  s.manager.loadTimeoutMs = 10;
+  await s.manager.init();
+  const result = await s.manager.loadAd('rewarded');
+  assert.equal(result, false);
+  assert.equal(s.manager.pendingLoads.rewarded, undefined);
+  await s.manager.loadAd('rewarded');
+  assert.equal(s.manager.pendingLoads.rewarded, undefined);
+});
+
+for (const result of [{ shown: true, rewarded: false }, { shown: false, rewarded: false, error: { message: 'failed' } }, undefined]) {
+  test('only the SDK reward callback grants a reward: ' + JSON.stringify(result), async () => {
+    const s = setup({ showRewarded: async () => result });
+    let rewards = 0;
+    await s.manager.showRewarded(() => rewards++);
+    assert.equal(rewards, 0);
+    assert.equal(s.manager.fullscreenBusy, false);
+    await s.manager.preloadAds();
+  });
+}
+
+test('a completed ad grants one reward and permits a fresh load', async () => {
+  const s = setup();
+  let rewards = 0;
+  await s.manager.showRewarded(() => rewards++);
+  await s.manager.preloadAds();
+  await s.manager.showRewarded(() => rewards++);
+  await s.manager.preloadAds();
   assert.equal(rewards, 2);
-  assert.equal(calls.show, 2);
-  assert.equal(calls.load, 2);
+  assert.equal(s.calls.show.length, 2);
+  assert.ok(s.calls.load.filter(id => id === s.manager.rewardedId).length >= 2);
 });
 
-test('interstitial show start does not trigger immediate reload or claim closure', async () => {
-  let loads = 0;
-  const { manager, messages } = setup({ loadInterstitial: async () => { loads++; } });
-  await manager.init();
-  await manager.preloadAds();
-  await manager.showInterstitial();
-  assert.equal(loads, 2); // startup, then mocked native not-loaded before show
-  assert.ok(messages.includes('Interstitial started.'));
-  assert.ok(!messages.some(message => /closed/i.test(message)));
+test('full-screen ads cannot overlap', async () => {
+  const show = deferred();
+  let showCount = 0;
+  const s = setup({ showRewarded: async () => { showCount++; return show.promise; } });
+  const first = s.manager.showRewarded(() => {});
+  await new Promise(resolve => setTimeout(resolve, 10));
+  await s.manager.showInterstitial();
+  assert.equal(showCount, 1);
+  assert.equal(s.calls.show.length, 0);
+  show.resolve({ shown: false, rewarded: false });
+  await first;
+  await s.manager.preloadAds();
 });
 
-test('controller loads before game code and is packaged in Android web assets', () => {
+test('game script is syntactically valid and LevelPlay assets are packaged', () => {
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   const workflow = fs.readFileSync(path.join(root, '.github/workflows/build.yml'), 'utf8');
   assert.ok(html.indexOf('<script src="ads-controller.js"></script>') < html.indexOf('// --- GAME ENGINE ---'));
   assert.match(workflow, /cp index\.html ads-controller\.js www\//);
-  assert.match(workflow, /capacitor-unity-ads@1\.0\.0/);
-  for (const [, script] of html.matchAll(/<script>([\s\S]*?)<\/script>/g)) {
-    new vm.Script(script);
-  }
+  assert.match(workflow, /capacitor-levelplay@0\.3\.0/);
+  assert.match(workflow, /unityads-adapter:5\.15\.0/);
+  for (const [, script] of html.matchAll(/<script>([\s\S]*?)<\/script>/g)) new vm.Script(script);
 });

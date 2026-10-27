@@ -1,33 +1,26 @@
-// capacitor-unity-ads 1.0.0: direct Unity Ads, not LevelPlay mediation.
-// Bidding placements require a mediator; see docs/UNITY_ADS_SETUP.md.
+// LevelPlay app key and ad unit IDs are public SDK identifiers, not API secrets.
 const UnityAdsManager = {
-  gameId: '800409725',
-  testMode: true,
-  interstitialId: 'Interstitial_Android',
-  rewardedId: 'Rewarded_Android',
+  appKey: '290617fe5',
+  rewardedId: '8a5kdqc4fvthlejd',
+  interstitialId: 'hyu8d966nd6iuv9n',
   initialized: false,
   initialization: null,
-  loads: {},
-  configurationErrors: new Set(),
-  rewardInProgress: false,
+  listenersRegistered: false,
+  pendingLoads: {},
+  fullscreenBusy: false,
   timerInterval: null,
   continuousSeconds: 0,
+  loadTimeoutMs: 30000,
 
   getPlugin() {
     const capacitor = window.Capacitor;
     if (!capacitor || (capacitor.isNativePlatform && !capacitor.isNativePlatform())) return null;
-    return capacitor.Plugins && capacitor.Plugins.Unityads;
+    return capacitor.Plugins && capacitor.Plugins.LevelPlay;
   },
 
-  reportError(context, error, placementId) {
+  reportError(context, error) {
     const message = error && error.message ? error.message : String(error);
     logToScreen(context + ': ' + message);
-    if (/adMarkup.*missing|objectId.*missing/i.test(message)) {
-      if (placementId) this.configurationErrors.add(placementId);
-      logToScreen('CONFIGURATION: bidding placement requested through the direct Unity Ads SDK. ' +
-        'Use an existing waterfall placement, or integrate LevelPlay and configure Unity Ads bidding. ' +
-        'Delays and fabricated adMarkup/objectId values cannot fix this. See docs/UNITY_ADS_SETUP.md.');
-    }
   },
 
   async init() {
@@ -35,20 +28,25 @@ const UnityAdsManager = {
     if (this.initialization) return this.initialization;
     const plugin = this.getPlugin();
     if (!plugin) {
-      logToScreen('Unity Ads is unavailable outside the native Android app.');
+      logToScreen('LevelPlay is unavailable outside the native Android app.');
       return false;
     }
     this.initialization = (async () => {
       try {
-        logToScreen('Initializing Unity SDK (testMode=' + this.testMode + ')...');
-        await plugin.initialize({ gameId: this.gameId, testMode: this.testMode });
+        // Load methods only start a request: readiness arrives through these events.
+        if (!this.listenersRegistered) {
+          await plugin.addListener('loaded', e => this.finishLoad(e, true));
+          await plugin.addListener('loadFailed', e => this.finishLoad(e, false));
+          this.listenersRegistered = true;
+        }
+        // Until a consent manager exists, do not signal consent to personalized ads.
+        await plugin.initialize({ appKey: this.appKey, consent: { gdprConsent: false } });
         this.initialized = true;
-        logToScreen('Unity SDK initialized. Loading ads...');
-        // This plugin has no banner API. Do not probe Capacitor proxies for methods.
+        logToScreen('LevelPlay initialized. Loading ads...');
         void this.preloadAds();
         return true;
       } catch (error) {
-        this.reportError('Unity initialization failed', error);
+        this.reportError('LevelPlay initialization failed', error);
         return false;
       } finally {
         this.initialization = null;
@@ -57,72 +55,89 @@ const UnityAdsManager = {
     return this.initialization;
   },
 
+  finishLoad(event, success) {
+    if (!event || !['rewarded', 'interstitial'].includes(event.format)) return;
+    const expectedId = event.format === 'rewarded' ? this.rewardedId : this.interstitialId;
+    if (event.adUnitId !== expectedId) return;
+    const pending = this.pendingLoads[event.format];
+    if (!pending) return;
+    if (!success) this.reportError('Ad load failed', event.error || 'Unknown error');
+    pending.finish(success);
+  },
+
   async loadAd(kind) {
     const plugin = this.getPlugin();
-    const placementId = kind === 'rewarded' ? this.rewardedId : this.interstitialId;
-    if (!plugin || !this.initialized || this.configurationErrors.has(placementId)) return false;
-    if (this.loads[kind]) return this.loads[kind];
-    this.loads[kind] = (async () => {
-      try {
-        const status = kind === 'rewarded'
-          ? await plugin.isRewardedVideoLoaded()
-          : await plugin.isInterstitialLoaded();
-        if (status.loaded) return true;
-        logToScreen('Loading: ' + placementId);
-        if (kind === 'rewarded') await plugin.loadRewardedVideo({ placementId });
-        else await plugin.loadInterstitial({ placementId });
-        logToScreen('Ready: ' + placementId);
-        return true;
-      } catch (error) {
-        this.reportError('Failed to load ' + placementId, error, placementId);
-        return false;
-      } finally {
-        delete this.loads[kind];
-      }
-    })();
-    return this.loads[kind];
+    if (!plugin || !this.initialized) return false;
+    if (this.pendingLoads[kind]) return this.pendingLoads[kind].promise;
+    const adUnitId = kind === 'rewarded' ? this.rewardedId : this.interstitialId;
+    let finish;
+    const pending = { promise: new Promise(resolve => { finish = resolve; }) };
+    pending.finish = success => {
+      if (this.pendingLoads[kind] !== pending) return;
+      clearTimeout(pending.timer);
+      delete this.pendingLoads[kind];
+      finish(success);
+    };
+    this.pendingLoads[kind] = pending;
+    pending.timer = setTimeout(() => {
+      this.reportError('Ad load timed out', kind);
+      pending.finish(false);
+    }, this.loadTimeoutMs);
+    try {
+      const status = await plugin.isReady({ format: kind, adUnitId });
+      if (status && status.ready) pending.finish(true);
+      else if (kind === 'rewarded') await plugin.loadRewarded({ adUnitId });
+      else await plugin.loadInterstitial({ adUnitId });
+    } catch (error) {
+      this.reportError('Ad load request failed', error);
+      pending.finish(false);
+    }
+    return pending.promise;
   },
 
   async preloadAds() {
-    // Load formats independently so a rewarded failure cannot block interstitials.
     await Promise.all([this.loadAd('rewarded'), this.loadAd('interstitial')]);
   },
 
   async showInterstitial() {
-    if (this.rewardInProgress || !(await this.init())) return;
-    if (!(await this.loadAd('interstitial'))) return;
+    if (this.fullscreenBusy) return;
+    this.fullscreenBusy = true;
     try {
-      await this.getPlugin().showInterstitial();
-      // This plugin resolves on SHOW START, not close. Reload on the next
-      // scheduled request, after querying the native loaded state.
-      logToScreen('Interstitial started.');
+      if (!(await this.init()) || !(await this.loadAd('interstitial'))) return;
+      const result = await this.getPlugin().showInterstitial({ adUnitId: this.interstitialId });
+      if (result && result.error) this.reportError('Interstitial failed', result.error);
+      if (result && result.shown) void this.loadAd('interstitial');
     } catch (error) {
-      this.reportError('Interstitial failed', error, this.interstitialId);
+      this.reportError('Interstitial failed', error);
+    } finally {
+      this.fullscreenBusy = false;
     }
   },
 
   async showRewarded(onSuccess) {
-    if (this.rewardInProgress) return;
-    this.rewardInProgress = true;
+    if (this.fullscreenBusy) return;
+    this.fullscreenBusy = true;
     try {
       if (!(await this.init()) || !(await this.loadAd('rewarded'))) {
         window.alert('No ad is available right now. Please try again later.');
         return;
       }
-      const result = await this.getPlugin().showRewardedVideo();
-      // Native plugin returns success:false for a skipped/incomplete video.
-      if (result && result.success === true) {
+      const result = await this.getPlugin().showRewarded({ adUnitId: this.rewardedId });
+      if (result && result.rewarded === true) {
         logToScreen('Rewarded video completed.');
         onSuccess();
+      } else if (result && result.error) {
+        this.reportError('Rewarded video failed', result.error);
+        window.alert('The ad could not play. Please try again later.');
       } else {
         logToScreen('Video closed without completion; no reward granted.');
       }
-      // The next request queries native readiness and loads a fresh ad if needed.
+      if (result && result.shown) void this.loadAd('rewarded');
     } catch (error) {
-      this.reportError('Rewarded video failed', error, this.rewardedId);
+      this.reportError('Rewarded video failed', error);
       window.alert('The ad could not play. Please try again later.');
     } finally {
-      this.rewardInProgress = false;
+      this.fullscreenBusy = false;
     }
   },
 
@@ -130,6 +145,7 @@ const UnityAdsManager = {
     clearInterval(this.timerInterval);
     this.continuousSeconds = 0;
     this.timerInterval = setInterval(() => {
+      if (this.fullscreenBusy || document.hidden) return;
       this.continuousSeconds++;
       if (this.continuousSeconds === 132) {
         const toast = document.getElementById('ad-toast');

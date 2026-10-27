@@ -487,14 +487,14 @@
     function logToScreen(msg) {
       const box = document.getElementById('debug-box');
       if (box) {
-        box.innerHTML += '<br>• ' + msg;
+        box.appendChild(document.createTextNode('\n• ' + msg));
         box.scrollTop = box.scrollHeight;
       }
       console.log(msg);
     }
 
     window.onerror = function(msg, url, line) {
-      logToScreen('<span style="color:#ef4444">ERR: ' + msg + ' (L:' + line + ')</span>');
+      logToScreen('ERR: ' + msg + ' (L:' + line + ')');
     };
 
     // --- 15-MIN LIFE REFILL ENGINE ---
