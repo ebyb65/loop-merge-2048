@@ -61,7 +61,8 @@ const UnityAdsManager = {
     if (event.adUnitId !== expectedId) return;
     const pending = this.pendingLoads[event.format];
     if (!pending) return;
-    if (!success) this.reportError('Ad load failed', event.error || 'Unknown error');
+    if (!success) this.reportError(event.format + ' ad load failed', event.error || 'Unknown error');
+    else logToScreen(event.format + ' ad loaded.');
     pending.finish(success);
   },
 
@@ -101,12 +102,16 @@ const UnityAdsManager = {
 
   async showInterstitial() {
     if (this.fullscreenBusy) return;
+    logToScreen('Attempting interstitial ad.');
     this.fullscreenBusy = true;
     try {
       if (!(await this.init()) || !(await this.loadAd('interstitial'))) return;
       const result = await this.getPlugin().showInterstitial({ adUnitId: this.interstitialId });
       if (result && result.error) this.reportError('Interstitial failed', result.error);
-      if (result && result.shown) void this.loadAd('interstitial');
+      if (result && result.shown) {
+        logToScreen('Interstitial ad shown.');
+        void this.loadAd('interstitial');
+      } else if (!result || !result.error) logToScreen('Interstitial ad was not shown.');
     } catch (error) {
       this.reportError('Interstitial failed', error);
     } finally {
@@ -144,9 +149,11 @@ const UnityAdsManager = {
   startLoopTimer() {
     clearInterval(this.timerInterval);
     this.continuousSeconds = 0;
+    logToScreen('Interstitial countdown started (135 seconds).');
     this.timerInterval = setInterval(() => {
       if (this.fullscreenBusy || document.hidden) return;
       this.continuousSeconds++;
+      if (this.continuousSeconds === 60) logToScreen('Interstitial countdown: 60 seconds elapsed.');
       if (this.continuousSeconds === 132) {
         const toast = document.getElementById('ad-toast');
         if (toast) toast.style.display = 'block';
@@ -162,5 +169,6 @@ const UnityAdsManager = {
 
   pauseLoopTimer() {
     clearInterval(this.timerInterval);
+    logToScreen('Interstitial countdown stopped at ' + this.continuousSeconds + ' seconds.');
   }
 };
