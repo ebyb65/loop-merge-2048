@@ -62,7 +62,7 @@ jobs:
           retention-days: 7
 
   build:
-    if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     needs: test-ads
     runs-on: ubuntu-latest
 
@@ -94,6 +94,15 @@ jobs:
           rm -rf www
           mkdir -p www
           cp index.html ads-controller.js www/
+          python3 - <<'PYCODE'
+          from pathlib import Path
+          html = Path('www/index.html')
+          content = html.read_text()
+          marker = '<div id="debug-box" style="'
+          if marker not in content:
+              raise SystemExit('Cannot locate debug console')
+          html.write_text(content.replace(marker, marker + 'display:none;', 1))
+          PYCODE
 
       - name: Initialize Capacitor App & Install LevelPlay Bridge
         run: |
@@ -103,14 +112,14 @@ jobs:
           npx cap init "Drop 2048" "com.games.drop2048" --web-dir "www"
           npx cap add android
 
-      - name: Bump Version Code to 10 & Version Name to 1.0.9
+      - name: Bump Version Code to 11 & Version Name to 1.0.10
         run: |
           python3 - << 'EOF'
           gradle_path = "android/app/build.gradle"
           with open(gradle_path, 'r') as f:
               content = f.read()
-          content = content.replace("versionCode 1", "versionCode 10")
-          content = content.replace('versionName "1.0"', 'versionName "1.0.9"')
+          content = content.replace("versionCode 1", "versionCode 11")
+          content = content.replace('versionName "1.0"', 'versionName "1.0.10"')
           with open(gradle_path, 'w') as f:
               f.write(content)
           EOF
