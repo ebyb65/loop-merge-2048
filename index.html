@@ -487,7 +487,8 @@
     function logToScreen(msg) {
       const box = document.getElementById('debug-box');
       if (box) {
-        box.appendChild(document.createTextNode('\n• ' + msg));
+        box.appendChild(document.createElement('br'));
+        box.appendChild(document.createTextNode('• ' + msg));
         box.scrollTop = box.scrollHeight;
       }
       console.log(msg);
