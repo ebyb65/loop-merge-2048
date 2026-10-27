@@ -19,6 +19,14 @@ approved. Configure and verify the Unity Ads bidder and its placement mapping in
 LevelPlay before assuming Unity Ads can serve. LevelPlay shows another network on
 the ad units; its presence alone does not prove a Unity Ads integration or fill.
 
+Unity organization settings currently report no developer website and an invalid
+app-ads URL. The repository seller file includes the Unity DIRECT entry shown
+by the dashboard while retaining the existing Google entry. This draft does not
+prove that the file is served from the developer website root or that Unity can
+verify it. After publication, configure the developer website and verify Unity
+can read the correct root-level app-ads.txt. The dashboard also lists additional
+resellers; check Unity’s current guidance before adding those.
+
 The original banner request was never implemented by the old Capacitor plugin.
 This branch addresses rewarded and interstitial ads. Banner integration needs a
 LevelPlay banner ad unit and a verified layout before it can be enabled.
