@@ -11,14 +11,7 @@ keys, service account secrets, or signing credentials in the repository.
 
 ## Remaining account setup
 
-The Unity Ads bidder is **not yet linked**. LevelPlay's UnityAds account setup
-requests a Unity Monetization Stats API key and Organization Core ID; the Unity
-API management page showed that the stats API key has not been created. Creating
-and sharing a credential with LevelPlay is an account-access change and must be
-approved. Configure and verify the Unity Ads bidder and its placement mapping in
-LevelPlay before assuming Unity Ads can serve. LevelPlay shows another network on
-the ad units; its presence alone does not prove a Unity Ads integration or fill.
-
+Unity Ads is linked in LevelPlay, with rewarded and interstitial bidding instances\nmapped to the existing Unity placement IDs. Both instances appear in the\nrespective LevelPlay mediation groups. This confirms dashboard configuration,\nnot ad fill or successful device delivery. The account API credential must be\nmanaged privately and must never be included in source code or build logs.\n
 Unity organization settings currently report no developer website and an invalid
 app-ads URL. The repository seller file includes the Unity DIRECT entry shown
 by the dashboard while retaining the existing Google entry. This draft does not
