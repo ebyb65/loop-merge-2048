@@ -481,19 +481,21 @@
     </div>
   </div>
 
+  <script src="ads-controller.js"></script>
   <script>
     // --- LIVE ON-SCREEN DEBUG LOGGER ---
     function logToScreen(msg) {
       const box = document.getElementById('debug-box');
       if (box) {
-        box.innerHTML += '<br>• ' + msg;
+        box.appendChild(document.createElement('br'));
+        box.appendChild(document.createTextNode('• ' + msg));
         box.scrollTop = box.scrollHeight;
       }
       console.log(msg);
     }
 
     window.onerror = function(msg, url, line) {
-      logToScreen('<span style="color:#ef4444">ERR: ' + msg + ' (L:' + line + ')</span>');
+      logToScreen('ERR: ' + msg + ' (L:' + line + ')');
     };
 
     // --- 15-MIN LIFE REFILL ENGINE ---
@@ -618,189 +620,6 @@
             timerDisplay.style.color = '#ef4444';
           }
         }
-      }
-    };
-
-    // --- UNITY ADS ROBUST CONTROLLER ---
-    const UnityAdsManager = {
-      gameId: '800409725',
-      testMode: true,
-      bannerId: 'Banner_Android',
-      interstitialId: 'Interstitial_Android',
-      rewardedId: 'Rewarded_Android',
-      initialized: false,
-      isRewardedReady: false,
-      isInterstitialReady: false,
-      timerInterval: null,
-      continuousSeconds: 0,
-
-      getPlugin() {
-        if (window.Capacitor && window.Capacitor.Plugins) {
-          if (window.Capacitor.Plugins.Unityads) return window.Capacitor.Plugins.Unityads;
-          if (window.Capacitor.Plugins.UnityAds) return window.Capacitor.Plugins.UnityAds;
-        }
-        return window.unityads || (window.cordova && window.cordova.plugins && window.cordova.plugins.unityads) || null;
-      },
-
-      async init() {
-        if (this.initialized) return;
-        const plugin = this.getPlugin();
-        if (!plugin) {
-          logToScreen('<span style="color:#f59e0b">⚠️ Unity Plugin Bridge Unavailable</span>');
-          return;
-        }
-
-        logToScreen('✔ Initializing Unity SDK...');
-        try {
-          if (plugin.initialize) {
-            await plugin.initialize({ gameId: this.gameId, testMode: true });
-          } else if (plugin.init) {
-            plugin.init(this.gameId, true);
-          }
-          this.initialized = true;
-          logToScreen('✔ Unity SDK Initialized');
-
-          // Initialize പൂർത്തിയായ ശേഷം 2 സെക്കൻഡ് കഴിഞ്ഞ് മാത്രം ഓരോന്നായി ലോഡ് ചെയ്യുക
-          setTimeout(() => {
-            this.showBanner();
-          }, 2000);
-
-          setTimeout(() => {
-            this.preloadAds();
-          }, 3500);
-
-        } catch(e) {
-          logToScreen('<span style="color:#ef4444">❌ Init Error: ' + JSON.stringify(e) + '</span>');
-        }
-      },
-
-      async preloadAds() {
-        const plugin = this.getPlugin();
-        if (!plugin || !this.initialized) return;
-
-        // 1. Rewarded Ad Preload
-        try {
-          logToScreen('⌛ Preloading: ' + this.rewardedId);
-          if (plugin.loadRewardedVideo) {
-            await plugin.loadRewardedVideo({ placementId: this.rewardedId });
-            this.isRewardedReady = true;
-            logToScreen('✔ ' + this.rewardedId + ' Ready');
-          } else if (plugin.loadRewardVideo) {
-            await plugin.loadRewardVideo({ placementId: this.rewardedId });
-            this.isRewardedReady = true;
-            logToScreen('✔ ' + this.rewardedId + ' Ready');
-          }
-        } catch(e) {
-          logToScreen('⚠️ ' + this.rewardedId + ' Preload: ' + (e.message || JSON.stringify(e)));
-        }
-
-        // 2. Interstitial Ad Preload
-        setTimeout(async () => {
-          try {
-            logToScreen('⌛ Preloading: ' + this.interstitialId);
-            if (plugin.loadInterstitial) {
-              await plugin.loadInterstitial({ placementId: this.interstitialId });
-              this.isInterstitialReady = true;
-              logToScreen('✔ ' + this.interstitialId + ' Ready');
-            }
-          } catch(e) {
-            logToScreen('⚠️ ' + this.interstitialId + ' Preload: ' + (e.message || JSON.stringify(e)));
-          }
-        }, 1500);
-      },
-      
-      showBanner() {
-        const plugin = this.getPlugin();
-        if (!plugin || !this.initialized) return;
-
-        try {
-          logToScreen('⌛ Loading Banner: ' + this.bannerId);
-          if (plugin.showBanner) {
-            plugin.showBanner({ placementId: this.bannerId, position: 'bottom' });
-          } else if (plugin.loadBanner) {
-            plugin.loadBanner(this.bannerId, 'bottom');
-          }
-        } catch(e) {
-          logToScreen('<span style="color:#ef4444">❌ Banner Error: ' + (e.message || JSON.stringify(e)) + '</span>');
-        }
-      },
-
-      async showInterstitial() {
-        const plugin = this.getPlugin();
-        if (!plugin || !this.initialized) return;
-
-        try {
-          logToScreen('▶ Showing Interstitial Ad...');
-          if (plugin.showInterstitial) {
-            await plugin.showInterstitial({ placementId: this.interstitialId });
-          } else if (plugin.showVideo) {
-            plugin.showVideo(this.interstitialId);
-          }
-          logToScreen('✔ Interstitial Closed');
-          setTimeout(() => this.preloadAds(), 2000);
-        } catch(e) {
-          logToScreen('<span style="color:#ef4444">❌ Interstitial Error: ' + (e.message || JSON.stringify(e)) + '</span>');
-          setTimeout(() => this.preloadAds(), 2000);
-        }
-      },
-
-      async showRewarded(onSuccess) {
-        logToScreen('▶ Requesting Rewarded Ad...');
-        const plugin = this.getPlugin();
-        if (!plugin || !this.initialized) {
-          logToScreen('⚠️ Plugin not ready. Granting reward fallback...');
-          setTimeout(onSuccess, 500);
-          return;
-        }
-
-        try {
-          let res = null;
-          if (plugin.showRewardedVideo) {
-            res = await plugin.showRewardedVideo({ placementId: this.rewardedId });
-          } else if (plugin.showRewarded) {
-            res = await plugin.showRewarded({ placementId: this.rewardedId });
-          } else if (plugin.showVideo) {
-            plugin.showVideo(this.rewardedId, () => {
-              logToScreen('✔ Rewarded Finished');
-              onSuccess();
-            }, (err) => {
-              logToScreen('⚠️ Video Error: ' + (err.message || JSON.stringify(err)));
-              onSuccess();
-            });
-            setTimeout(() => this.preloadAds(), 2000);
-            return;
-          }
-
-          logToScreen('✔ Rewarded Shown: ' + JSON.stringify(res));
-          onSuccess();
-          setTimeout(() => this.preloadAds(), 2000);
-        } catch(e) {
-          logToScreen('<span style="color:#ef4444">❌ Rewarded Error: ' + (e.message || JSON.stringify(e)) + '</span>');
-          onSuccess();
-          setTimeout(() => this.preloadAds(), 2000);
-        }
-      },
-
-      startLoopTimer() {
-        clearInterval(this.timerInterval);
-        this.continuousSeconds = 0;
-        this.timerInterval = setInterval(() => {
-          this.continuousSeconds++;
-          if (this.continuousSeconds === 132) {
-            const toast = document.getElementById('ad-toast');
-            if (toast) toast.style.display = 'block';
-          }
-          if (this.continuousSeconds >= 135) {
-            this.continuousSeconds = 0;
-            const toast = document.getElementById('ad-toast');
-            if (toast) toast.style.display = 'none';
-            this.showInterstitial();
-          }
-        }, 1000);
-      },
-
-      pauseLoopTimer() {
-        clearInterval(this.timerInterval);
       }
     };
 
@@ -1223,3 +1042,4 @@
   </script>
 </body>
 </html>
+

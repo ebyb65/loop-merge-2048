@@ -3,10 +3,67 @@ name: Build Android Production AAB & APK
 on:
   push:
     branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
   workflow_dispatch:
 
 jobs:
+  test-ads:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Test ad lifecycle and asset packaging
+        run: node --test tests/ads-controller.test.cjs
+
+  android-debug:
+    if: github.event_name == 'pull_request'
+    needs: test-ads
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: '21'
+      - name: Prepare Capacitor Android project
+        run: |
+          mkdir -p www
+          cp index.html ads-controller.js www/
+          npm init -y
+          npm install @capacitor/core@8 @capacitor/cli@8 @capacitor/android@8 capacitor-levelplay@0.3.0
+          npx cap init "Drop 2048" "com.games.drop2048" --web-dir "www"
+          npx cap add android
+          python3 - <<'PYCODE'
+          from pathlib import Path
+          p = Path('android/app/build.gradle')
+          source = p.read_text()
+          if 'dependencies {' not in source:
+              raise SystemExit('Cannot locate app dependencies block')
+          source = source.replace('dependencies {', "dependencies {\n    implementation 'com.unity3d.ads-mediation:unityads-adapter:5.15.0'", 1)
+          p.write_text(source)
+          PYCODE
+          npx cap sync android
+      - name: Build test APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+      - name: Upload test APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Drop2048-LevelPlay-test-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 7
+
   build:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    needs: test-ads
     runs-on: ubuntu-latest
 
     steps:
@@ -36,29 +93,38 @@ jobs:
         run: |
           rm -rf www
           mkdir -p www
-          cp index.html www/
+          cp index.html ads-controller.js www/
+          python3 - <<'PYCODE'
+          from pathlib import Path
+          html = Path('www/index.html')
+          content = html.read_text()
+          marker = '<div id="debug-box" style="'
+          if marker not in content:
+              raise SystemExit('Cannot locate debug console')
+          html.write_text(content.replace(marker, marker + 'display:none;', 1))
+          PYCODE
 
-      - name: Initialize Capacitor App & Install Capacitor Unity Ads Bridge
+      - name: Initialize Capacitor App & Install LevelPlay Bridge
         run: |
           npm init -y
-          npm install @capacitor/core @capacitor/cli @capacitor/android
-          npm install capacitor-unity-ads
+          npm install @capacitor/core@8 @capacitor/cli@8 @capacitor/android@8
+          npm install capacitor-levelplay@0.3.0
           npx cap init "Drop 2048" "com.games.drop2048" --web-dir "www"
           npx cap add android
 
-      - name: Bump Version Code to 10 & Version Name to 1.0.9
+      - name: Bump Version Code to 12 & Version Name to 1.0.10
         run: |
           python3 - << 'EOF'
           gradle_path = "android/app/build.gradle"
           with open(gradle_path, 'r') as f:
               content = f.read()
-          content = content.replace("versionCode 1", "versionCode 10")
-          content = content.replace('versionName "1.0"', 'versionName "1.0.9"')
+          content = content.replace("versionCode 1", "versionCode 12")
+          content = content.replace('versionName "1.0"', 'versionName "1.0.10"')
           with open(gradle_path, 'w') as f:
               f.write(content)
           EOF
 
-      - name: Add Unity Ads SDK Dependency to build.gradle
+      - name: Add Unity Ads mediation adapter to build.gradle
         run: |
           python3 - << 'EOF'
           gradle_path = "android/app/build.gradle"
@@ -67,9 +133,9 @@ jobs:
           
           unity_dep = """
           dependencies {
-              implementation 'com.unity3d.ads:unity-ads:4.12.5'
+              implementation 'com.unity3d.ads-mediation:unityads-adapter:5.15.0'
           """
-          if "com.unity3d.ads:unity-ads" not in content:
+          if "com.unity3d.ads-mediation:unityads-adapter" not in content:
               content = content.replace("dependencies {", unity_dep)
               with open(gradle_path, 'w') as f:
                   f.write(content)
@@ -166,3 +232,4 @@ jobs:
           name: upload-certificate-pem
           path: upload_certificate.pem
           retention-days: 7
+
