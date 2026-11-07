@@ -46,6 +46,8 @@ jobs:
           if 'dependencies {' not in source:
               raise SystemExit('Cannot locate app dependencies block')
           source = source.replace('dependencies {', "dependencies {\n    implementation 'com.unity3d.ads-mediation:unityads-adapter:5.15.0'", 1)
+          # Exclude the optional Ad Quality SDK (Unity-documented exclusion) for the Play Data safety fix
+          source += "\nconfigurations.all {\n    exclude group: 'com.unity3d.ads-mediation', module: 'adquality-sdk'\n}\n"
           p.write_text(source)
           PYCODE
           npx cap sync android
@@ -141,6 +143,19 @@ jobs:
                   f.write(content)
           EOF
 
+      - name: Exclude Ad Quality SDK from all configurations
+        run: |
+          python3 - << 'EOF'
+          from pathlib import Path
+          p = Path("android/app/build.gradle")
+          content = p.read_text()
+          rule = "exclude group: 'com.unity3d.ads-mediation', module: 'adquality-sdk'"
+          if rule not in content:
+              content += "\nconfigurations.all {\n    " + rule + "\n}\n"
+              p.write_text(content)
+          EOF
+          grep -n "adquality-sdk" android/app/build.gradle
+
       - name: Generate Minimal Light App Icons
         run: |
           python3 - << 'EOF'
@@ -207,6 +222,43 @@ jobs:
       - name: Sign Android App Bundle (AAB) with Original Key
         run: |
           jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore android/release-key.jks -storepass drop2048pass -keypass drop2048pass android/app/build/outputs/bundle/release/app-release.aab drop2048
+
+      - name: Verify bundle contents (Ad Quality removed, installed-app access report)
+        run: |
+          set -e
+          AAB=android/app/build/outputs/bundle/release/app-release.aab
+          rm -rf aab-check && mkdir aab-check && unzip -q "$AAB" -d aab-check
+          echo "== Unity/LevelPlay libraries in bundle metadata =="
+          strings aab-check/BUNDLE-METADATA/com.android.tools.build.libraries/dependencies.pb | grep -E "unity3d|ironsource" | sort -u || true
+          if strings aab-check/BUNDLE-METADATA/com.android.tools.build.libraries/dependencies.pb | grep -q "adquality"; then
+            echo "FAIL: adquality-sdk is still packaged"; exit 1
+          fi
+          if find aab-check -path "*META-INF*" | grep -qi adquality; then
+            echo "FAIL: Ad Quality META-INF files still packaged"; exit 1
+          fi
+          echo "PASS: Ad Quality SDK not packaged"
+          echo "== Merged manifest: package visibility =="
+          MAN=$(find android/app/build/intermediates -path "*release*" -name AndroidManifest.xml | grep -i merged | head -1)
+          echo "manifest: $MAN"
+          grep -n "QUERY_ALL_PACKAGES" "$MAN" && echo "WARNING: QUERY_ALL_PACKAGES present" || echo "QUERY_ALL_PACKAGES: not present"
+          awk '/<queries>/,/<\/queries>/' "$MAN" || true
+          echo "== Code that calls installed-app APIs (by class) =="
+          DEXDUMP=$(ls $ANDROID_HOME/build-tools/*/dexdump | sort -V | tail -1)
+          for dex in aab-check/base/dex/*.dex; do
+            "$DEXDUMP" -d "$dex" 2>/dev/null | awk '
+              /Class descriptor/ {cls=$4}
+              /getInstalledPackages|getInstalledApplications|queryIntentActivities|getPackagesForUid|getLaunchIntentForPackage/ {
+                match($0, /Landroid\/content\/pm\/PackageManager;\.[A-Za-z]+/); api=substr($0, RSTART, RLENGTH);
+                print cls " -> " api }' 
+          done | sort | uniq -c | sort -rn | tee installed-app-api-report.txt
+          cp installed-app-api-report.txt aab-check-report.txt
+
+      - name: Upload bundle verification report
+        uses: actions/upload-artifact@v4
+        with:
+          name: bundle-verification-report
+          path: installed-app-api-report.txt
+          retention-days: 14
 
       - name: Upload Play Store AAB Bundle
         uses: actions/upload-artifact@v4
