@@ -18,6 +18,7 @@ function setup(overrides = {}, native = true) {
   const ready = {};
   const messages = [];
   const alerts = [];
+  const cssVars = {};
   const plugin = {
     addListener: async (name, fn) => { listeners[name] = fn; return { remove: async () => {} }; },
     initialize: async options => { calls.init.push(options); },
@@ -32,16 +33,20 @@ function setup(overrides = {}, native = true) {
     },
     showRewarded: async ({ adUnitId }) => { calls.show.push(adUnitId); ready[adUnitId] = false; return { shown: true, rewarded: true }; },
     showInterstitial: async ({ adUnitId }) => { calls.show.push(adUnitId); ready[adUnitId] = false; return { shown: true, rewarded: false }; },
+    destroyBanner: async () => {},
+    createBanner: async o => { calls.banner = (calls.banner || []).concat(['create:' + o.adUnitId]); return { bannerId: 'main', frame: { x: 0, y: 0, width: 320, height: 50 }, visible: false }; },
+    loadBanner: async () => { calls.banner.push('load'); },
+    showBanner: async () => { calls.banner.push('show'); return { bannerId: 'main', frame: { x: 0, y: 0, width: 320, height: 50 }, visible: true }; },
     ...overrides
   };
   const context = vm.createContext({
     window: { Capacitor: native ? { Plugins: { LevelPlay: plugin } } : undefined, alert: m => alerts.push(m) },
     logToScreen: m => messages.push(m),
     setInterval: () => 1, clearInterval: () => {}, setTimeout, clearTimeout,
-    document: { hidden: false, getElementById: () => ({ style: {} }) }
+    document: { hidden: false, getElementById: () => ({ style: {} }), documentElement: { style: { setProperty: (k, v) => { cssVars[k] = v; } } } }
   });
   vm.runInContext(source + '\nthis.manager = UnityAdsManager;', context);
-  return { manager: context.manager, plugin, calls, listeners, ready, messages, alerts };
+  return { manager: context.manager, plugin, calls, listeners, ready, messages, alerts, cssVars };
 }
 
 test('coalesces initialization and does not claim personalized-ad consent', async () => {
@@ -159,4 +164,71 @@ test('game script is syntactically valid and LevelPlay assets are packaged', () 
   assert.match(workflow, /capacitor-levelplay@0\.3\.0/);
   assert.match(workflow, /unityads-adapter:5\.15\.0/);
   for (const [, script] of html.matchAll(/<script>([\s\S]*?)<\/script>/g)) new vm.Script(script);
+});
+
+const flush = () => new Promise(resolve => setImmediate(resolve));
+
+test('interstitial play time survives restarts and fires at the interval', async () => {
+  const s = setup();
+  await s.manager.init();
+  for (let i = 0; i < 100; i++) s.manager.tick();
+  s.manager.pauseLoopTimer();
+  s.manager.startLoopTimer(); // restart must not reset the count
+  for (let i = 0; i < 35; i++) s.manager.tick();
+  await flush(); await flush();
+  assert.equal(s.calls.show.filter(id => id === s.manager.interstitialId).length, 1);
+  assert.equal(s.manager.secondsSinceInterstitial(), 0);
+});
+
+test('game-break interstitials respect grace period and cooldown', async () => {
+  const s = setup();
+  await s.manager.init();
+  for (let i = 0; i < 30; i++) s.manager.tick();
+  assert.equal(s.manager.onGameBreak('restart'), false); // inside first-play grace
+  for (let i = 0; i < 40; i++) s.manager.tick();
+  assert.equal(s.manager.onGameBreak('restart'), true);
+  await flush(); await flush();
+  assert.equal(s.calls.show.length, 1);
+  for (let i = 0; i < 20; i++) s.manager.tick();
+  assert.equal(s.manager.onGameBreak('restart'), false); // cooldown
+});
+
+test('a failed interstitial backs off instead of retrying every second', async () => {
+  let attempts = 0;
+  const s = setup({ showInterstitial: async () => { attempts++; return { shown: false, error: { message: 'no fill' } }; } });
+  await s.manager.init();
+  for (let i = 0; i < 136; i++) { s.manager.tick(); await flush(); }
+  assert.equal(attempts, 1);
+  for (let i = 0; i < 30; i++) { s.manager.tick(); await flush(); }
+  assert.equal(attempts, 2);
+});
+
+test('banner is skipped without an ad unit ID', async () => {
+  const s = setup();
+  await s.manager.init();
+  await flush();
+  assert.equal(s.calls.banner, undefined);
+});
+
+test('banner is created, loaded, shown and reserves bottom space', async () => {
+  const s = setup();
+  s.manager.bannerAdUnitId = 'bannerunit';
+  await s.manager.init();
+  await flush(); await flush();
+  assert.deepEqual(s.calls.banner, ['create:bannerunit', 'load', 'show']);
+  assert.equal(s.cssVars['--banner-space'], '50px');
+  s.listeners.bannerLoaded({ bannerId: 'main', frame: { height: 50 } });
+  assert.equal(s.manager.bannerState, 'shown');
+});
+
+test('banner load failure schedules a recreate', async () => {
+  const s = setup();
+  s.manager.bannerAdUnitId = 'bannerunit';
+  s.manager.bannerRetryMs = 5;
+  await s.manager.init();
+  await flush(); await flush();
+  s.listeners.bannerLoadFailed({ bannerId: 'main', error: { message: 'no fill' } });
+  assert.equal(s.manager.bannerState, 'failed');
+  await new Promise(r => setTimeout(r, 20)); await flush();
+  assert.equal(s.calls.banner.filter(c => c.startsWith('create')).length, 2);
 });

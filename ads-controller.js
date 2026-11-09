@@ -3,6 +3,18 @@ const UnityAdsManager = {
   appKey: '290617fe5',
   rewardedId: '8a5kdqc4fvthlejd',
   interstitialId: 'hyu8d966nd6iuv9n',
+  // LevelPlay banner ad unit ID. Leave empty to disable banners.
+  bannerAdUnitId: '',
+  bannerState: 'none', // none | creating | loading | shown | failed
+  bannerRetryMs: 30000,
+  bannerSpace: 0,
+  // Interstitial pacing, counted in seconds of active play (pauses and modals do not count).
+  interstitialEverySeconds: 135, // mid-game interstitial after this much play since the last one
+  breakCooldownSeconds: 60,      // between-games interstitial only if this long since the last one
+  firstAdGraceSeconds: 45,       // never before this much play in a session
+  retryAfterFailSeconds: 30,
+  activeSeconds: 0,
+  lastInterstitialAt: 0,
   initialized: false,
   initialization: null,
   listenersRegistered: false,
@@ -37,6 +49,9 @@ const UnityAdsManager = {
         if (!this.listenersRegistered) {
           await plugin.addListener('loaded', e => this.finishLoad(e, true));
           await plugin.addListener('loadFailed', e => this.finishLoad(e, false));
+          await plugin.addListener('bannerLoaded', e => this.onBannerLoaded(e));
+          await plugin.addListener('bannerLoadFailed', e => this.onBannerFailed(e));
+          await plugin.addListener('bannerDisplayFailed', e => this.onBannerFailed(e));
           this.listenersRegistered = true;
         }
         // Until a consent manager exists, do not signal consent to personalized ads.
@@ -44,6 +59,7 @@ const UnityAdsManager = {
         this.initialized = true;
         logToScreen('LevelPlay initialized. Loading ads...');
         void this.preloadAds();
+        void this.setupBanner();
         return true;
       } catch (error) {
         this.reportError('LevelPlay initialization failed', error);
@@ -101,17 +117,23 @@ const UnityAdsManager = {
   },
 
   async showInterstitial() {
-    if (this.fullscreenBusy) return;
+    if (this.fullscreenBusy) return false;
     logToScreen('Attempting interstitial ad.');
     this.fullscreenBusy = true;
+    // Until it is shown, allow another attempt only after a short back-off.
+    this.lastInterstitialAt = Math.max(this.lastInterstitialAt,
+      this.activeSeconds - this.interstitialEverySeconds + this.retryAfterFailSeconds);
     try {
-      if (!(await this.init()) || !(await this.loadAd('interstitial'))) return;
+      if (!(await this.init()) || !(await this.loadAd('interstitial'))) return false;
       const result = await this.getPlugin().showInterstitial({ adUnitId: this.interstitialId });
       if (result && result.error) this.reportError('Interstitial failed', result.error);
       if (result && result.shown) {
         logToScreen('Interstitial ad shown.');
+        this.lastInterstitialAt = this.activeSeconds;
         void this.loadAd('interstitial');
+        return true;
       } else if (!result || !result.error) logToScreen('Interstitial ad was not shown.');
+      return false;
     } catch (error) {
       this.reportError('Interstitial failed', error);
     } finally {
@@ -146,29 +168,95 @@ const UnityAdsManager = {
     }
   },
 
+  secondsSinceInterstitial() {
+    return this.activeSeconds - this.lastInterstitialAt;
+  },
+
+  // Natural break (new game, restart, game over). Shows an interstitial when enough play has passed.
+  onGameBreak(reason) {
+    if (this.activeSeconds < this.firstAdGraceSeconds) return false;
+    if (this.secondsSinceInterstitial() < this.breakCooldownSeconds) return false;
+    logToScreen('Interstitial at game break: ' + reason);
+    void this.showInterstitial();
+    return true;
+  },
+
+  // Counts active play. Play time is kept across restarts so short games still reach the interval.
   startLoopTimer() {
     clearInterval(this.timerInterval);
-    this.continuousSeconds = 0;
-    logToScreen('Interstitial countdown started (135 seconds).');
-    this.timerInterval = setInterval(() => {
-      if (this.fullscreenBusy || document.hidden) return;
-      this.continuousSeconds++;
-      if (this.continuousSeconds === 60) logToScreen('Interstitial countdown: 60 seconds elapsed.');
-      if (this.continuousSeconds === 132) {
-        const toast = document.getElementById('ad-toast');
-        if (toast) toast.style.display = 'block';
-      }
-      if (this.continuousSeconds >= 135) {
-        this.continuousSeconds = 0;
-        const toast = document.getElementById('ad-toast');
-        if (toast) toast.style.display = 'none';
-        void this.showInterstitial();
-      }
-    }, 1000);
+    logToScreen('Interstitial countdown running (' + this.secondsSinceInterstitial() + 's since last ad).');
+    this.timerInterval = setInterval(() => this.tick(), 1000);
+  },
+
+  tick() {
+    if (this.fullscreenBusy || document.hidden) return;
+    this.activeSeconds++;
+    const since = this.secondsSinceInterstitial();
+    const toast = document.getElementById('ad-toast');
+    if (since === this.interstitialEverySeconds - 3 && toast) toast.style.display = 'block';
+    if (since >= this.interstitialEverySeconds) {
+      if (toast) toast.style.display = 'none';
+      void this.showInterstitial();
+    }
   },
 
   pauseLoopTimer() {
     clearInterval(this.timerInterval);
-    logToScreen('Interstitial countdown stopped at ' + this.continuousSeconds + ' seconds.');
+    const toast = document.getElementById('ad-toast');
+    if (toast) toast.style.display = 'none';
+    logToScreen('Interstitial countdown paused at ' + this.secondsSinceInterstitial() + 's.');
+  },
+
+  // --- BANNER ---
+  async setupBanner() {
+    const plugin = this.getPlugin();
+    if (!this.bannerAdUnitId || !plugin || !this.initialized) return false;
+    if (this.bannerState !== 'none' && this.bannerState !== 'failed') return true;
+    this.bannerState = 'creating';
+    try {
+      await plugin.destroyBanner({ bannerId: 'main' });
+      const created = await plugin.createBanner({
+        adUnitId: this.bannerAdUnitId, bannerId: 'main', size: 'BANNER', position: 'bottom'
+      });
+      this.applyBannerSpace(created && created.frame);
+      this.bannerState = 'loading';
+      await plugin.loadBanner({ bannerId: 'main' });
+      const shown = await plugin.showBanner({ bannerId: 'main' });
+      this.applyBannerSpace(shown && shown.frame);
+      logToScreen('Banner requested.');
+      return true;
+    } catch (error) {
+      this.reportError('Banner setup failed', error);
+      this.bannerState = 'failed';
+      this.scheduleBannerRetry();
+      return false;
+    }
+  },
+
+  onBannerLoaded(event) {
+    if (!event || event.bannerId !== 'main') return;
+    this.bannerState = 'shown';
+    this.applyBannerSpace(event.frame);
+    logToScreen('Banner loaded.');
+  },
+
+  onBannerFailed(event) {
+    if (!event || event.bannerId !== 'main') return;
+    this.reportError('Banner failed', event.error || 'Unknown error');
+    this.bannerState = 'failed';
+    this.scheduleBannerRetry();
+  },
+
+  scheduleBannerRetry() {
+    clearTimeout(this.bannerRetryTimer);
+    this.bannerRetryTimer = setTimeout(() => { void this.setupBanner(); }, this.bannerRetryMs);
+  },
+
+  // Reserve room at the bottom of every screen so the banner never covers the game.
+  applyBannerSpace(frame) {
+    if (!frame || !frame.height) return;
+    this.bannerSpace = Math.ceil(frame.height);
+    const root = document.documentElement;
+    if (root && root.style && root.style.setProperty) root.style.setProperty('--banner-space', this.bannerSpace + 'px');
   }
 };

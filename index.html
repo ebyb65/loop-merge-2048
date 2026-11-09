@@ -49,7 +49,7 @@
       flex-direction: column;
       align-items: center;
       justify-content: space-between;
-      padding: env(safe-area-inset-top, 24px) 18px env(safe-area-inset-bottom, 24px) 18px;
+      padding: env(safe-area-inset-top, 24px) 18px calc(env(safe-area-inset-bottom, 24px) + var(--banner-space, 0px)) 18px;
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.3s ease, transform 0.3s ease;
@@ -962,6 +962,7 @@
       UnityAdsManager.init();
       showScreen('game-screen');
       initGame();
+      UnityAdsManager.onGameBreak('new game');
     };
 
     document.getElementById('rules-btn').onclick = () => document.getElementById('rules-modal').classList.add('active');
@@ -983,6 +984,7 @@
     document.getElementById('restart-btn').onclick = () => {
       document.getElementById('pause-modal').classList.remove('active');
       initGame();
+      UnityAdsManager.onGameBreak('restart');
     };
     document.getElementById('home-btn').onclick = () => {
       UnityAdsManager.pauseLoopTimer();
@@ -1011,6 +1013,7 @@
       const hasLife = LifeManager.consumeLife();
       if (hasLife) {
         initGame();
+        UnityAdsManager.onGameBreak('new game after full board');
       } else {
         document.getElementById('over-modal').classList.add('active');
       }
