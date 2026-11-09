@@ -205,6 +205,7 @@ test('a failed interstitial backs off instead of retrying every second', async (
 
 test('banner is skipped without an ad unit ID', async () => {
   const s = setup();
+  s.manager.bannerAdUnitId = '';
   await s.manager.init();
   await flush();
   assert.equal(s.calls.banner, undefined);

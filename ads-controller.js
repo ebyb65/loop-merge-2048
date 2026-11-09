@@ -4,7 +4,7 @@ const UnityAdsManager = {
   rewardedId: '8a5kdqc4fvthlejd',
   interstitialId: 'hyu8d966nd6iuv9n',
   // LevelPlay banner ad unit ID. Leave empty to disable banners.
-  bannerAdUnitId: '',
+  bannerAdUnitId: '3c2do5ad82ulkit9',
   bannerState: 'none', // none | creating | loading | shown | failed
   bannerRetryMs: 30000,
   bannerSpace: 0,
