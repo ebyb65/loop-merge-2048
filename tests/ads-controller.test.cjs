@@ -233,3 +233,16 @@ test('banner load failure schedules a recreate', async () => {
   await new Promise(r => setTimeout(r, 20)); await flush();
   assert.equal(s.calls.banner.filter(c => c.startsWith('create')).length, 2);
 });
+
+test('a refresh with no fill keeps an already loaded banner', async () => {
+  const s = setup();
+  s.manager.bannerAdUnitId = 'bannerunit';
+  s.manager.bannerRetryMs = 5;
+  await s.manager.init();
+  await flush(); await flush();
+  s.listeners.bannerLoaded({ bannerId: 'main', frame: { height: 50 } });
+  s.listeners.bannerLoadFailed({ bannerId: 'main', error: { message: 'Mediation No fill' } });
+  assert.equal(s.manager.bannerState, 'shown');
+  await new Promise(r => setTimeout(r, 20)); await flush();
+  assert.equal(s.calls.banner.filter(c => c.startsWith('create')).length, 1);
+});

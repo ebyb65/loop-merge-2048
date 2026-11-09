@@ -8,6 +8,7 @@ const UnityAdsManager = {
   bannerState: 'none', // none | creating | loading | shown | failed
   bannerRetryMs: 30000,
   bannerSpace: 0,
+  bannerEverLoaded: false,
   // Interstitial pacing, counted in seconds of active play (pauses and modals do not count).
   interstitialEverySeconds: 135, // mid-game interstitial after this much play since the last one
   breakCooldownSeconds: 60,      // between-games interstitial only if this long since the last one
@@ -236,12 +237,18 @@ const UnityAdsManager = {
   onBannerLoaded(event) {
     if (!event || event.bannerId !== 'main') return;
     this.bannerState = 'shown';
+    this.bannerEverLoaded = true;
     this.applyBannerSpace(event.frame);
     logToScreen('Banner loaded.');
   },
 
   onBannerFailed(event) {
     if (!event || event.bannerId !== 'main') return;
+    if (this.bannerEverLoaded) {
+      // Auto-refresh found no new ad: the SDK keeps the current one and retries on the next refresh.
+      logToScreen('Banner refresh: no new ad, keeping current banner.');
+      return;
+    }
     this.reportError('Banner failed', event.error || 'Unknown error');
     this.bannerState = 'failed';
     this.scheduleBannerRetry();

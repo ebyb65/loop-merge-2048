@@ -607,6 +607,11 @@
         const display = document.getElementById('lives-display');
         const timerDisplay = document.getElementById('timer-display');
         if (display) display.innerText = hearts[this.lives] || '🖤🖤🖤';
+        // Offer "+1 Life" ads only when a life can actually be added.
+        for (const id of ['home-refill-btn', 'pause-refill-btn']) {
+          const btn = document.getElementById(id);
+          if (btn) btn.style.display = this.lives >= MAX_LIVES ? 'none' : '';
+        }
 
         if (timerDisplay) {
           if (this.lives >= MAX_LIVES) {
@@ -1021,6 +1026,7 @@
 
     // Refill life via rewarded ad
     function triggerAdRefill() {
+      if (LifeManager.lives >= MAX_LIVES) return;
       UnityAdsManager.showRewarded(() => {
         LifeManager.addLife();
         document.getElementById('over-modal').classList.remove('active');

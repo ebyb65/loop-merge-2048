@@ -51,6 +51,45 @@ jobs:
           p.write_text(source)
           PYCODE
           npx cap sync android
+      - name: Generate Minimal Light App Icons
+        run: |
+          pip install pillow
+          python3 - << 'EOF'
+          import os
+          from PIL import Image, ImageDraw
+
+          size = (512, 512)
+          img = Image.new('RGBA', size, (248, 250, 252, 255))
+          draw = ImageDraw.Draw(img)
+
+          draw.rounded_rectangle([30, 30, 482, 482], radius=110, fill=(255, 255, 255, 255), outline=(79, 70, 229, 255), width=8)
+          draw.rounded_rectangle([186, 75, 326, 215], radius=28, fill=(245, 158, 11, 255))
+          draw.polygon([(256, 240), (236, 220), (276, 220)], fill=(79, 70, 229, 230))
+          draw.rounded_rectangle([136, 250, 376, 430], radius=40, fill=(79, 70, 229, 255))
+
+          densities = {
+              'mipmap-mdpi': 48,
+              'mipmap-hdpi': 72,
+              'mipmap-xhdpi': 96,
+              'mipmap-xxhdpi': 144,
+              'mipmap-xxxhdpi': 192
+          }
+
+          base_res = "android/app/src/main/res"
+          for folder, px in densities.items():
+              target_dir = os.path.join(base_res, folder)
+              os.makedirs(target_dir, exist_ok=True)
+              resized = img.resize((px, px), Image.Resampling.LANCZOS)
+              resized.save(os.path.join(target_dir, 'ic_launcher.png'))
+              resized.save(os.path.join(target_dir, 'ic_launcher_round.png'))
+              resized.save(os.path.join(target_dir, 'ic_launcher_foreground.png'))
+
+              for xml_name in ['ic_launcher.xml', 'ic_launcher_round.xml']:
+                  xml_path = os.path.join(target_dir, xml_name)
+                  if os.path.exists(xml_path):
+                      os.remove(xml_path)
+          EOF
+
       - name: Build test APK
         run: |
           cd android
