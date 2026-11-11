@@ -9,6 +9,10 @@ const UnityAdsManager = {
   bannerRetryMs: 30000,
   bannerSpace: 0,
   bannerEverLoaded: false,
+  // --- Consent (GDPR) ---
+  consentKey: 'drop2048_ads_consent', // 'granted' | 'denied'
+  consentPrompt: null, // set by the page: async () => true (agree) / false (decline)
+  timeZoneOverride: null, // tests only
   // Interstitial pacing, counted in seconds of active play (pauses and modals do not count).
   interstitialEverySeconds: 135, // mid-game interstitial after this much play since the last one
   breakCooldownSeconds: 60,      // between-games interstitial only if this long since the last one
@@ -55,8 +59,11 @@ const UnityAdsManager = {
           await plugin.addListener('bannerDisplayFailed', e => this.onBannerFailed(e));
           this.listenersRegistered = true;
         }
-        // Until a consent manager exists, do not signal consent to personalized ads.
-        await plugin.initialize({ appKey: this.appKey, consent: { gdprConsent: false } });
+        // GDPR consent is only signalled for EEA/UK/Swiss players; elsewhere the SDK default applies.
+        const consent = await this.resolveConsent();
+        const options = { appKey: this.appKey };
+        if (consent) options.consent = consent;
+        await plugin.initialize(options);
         this.initialized = true;
         logToScreen('LevelPlay initialized. Loading ads...');
         void this.preloadAds();
@@ -206,6 +213,52 @@ const UnityAdsManager = {
     const toast = document.getElementById('ad-toast');
     if (toast) toast.style.display = 'none';
     logToScreen('Interstitial countdown paused at ' + this.secondsSinceInterstitial() + 's.');
+  },
+
+  // --- CONSENT ---
+  // EEA, UK and Switzerland are detected from the device time zone (no network, no permissions).
+  isGdprRegion() {
+    let tz = this.timeZoneOverride;
+    if (!tz) {
+      try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) { tz = ''; }
+    }
+    if (/^Europe\//.test(tz)) return true;
+    return ['Atlantic/Canary', 'Atlantic/Madeira', 'Atlantic/Azores', 'Atlantic/Reykjavik',
+      'Atlantic/Faroe', 'Africa/Ceuta', 'Arctic/Longyearbyen', 'Asia/Nicosia', 'Asia/Famagusta'].includes(tz);
+  },
+
+  getStoredConsent() {
+    try {
+      const v = window.localStorage.getItem(this.consentKey);
+      return v === 'granted' || v === 'denied' ? v : null;
+    } catch (e) { return null; }
+  },
+
+  storeConsent(granted) {
+    try { window.localStorage.setItem(this.consentKey, granted ? 'granted' : 'denied'); } catch (e) {}
+  },
+
+  // Returns the consent options for initialize(), or null when no GDPR signal applies.
+  async resolveConsent() {
+    if (!this.isGdprRegion()) return null;
+    let stored = this.getStoredConsent();
+    if (!stored && typeof this.consentPrompt === 'function') {
+      let granted = false;
+      try { granted = !!(await this.consentPrompt()); } catch (e) { granted = false; }
+      this.storeConsent(granted);
+      stored = granted ? 'granted' : 'denied';
+    }
+    return { gdprConsent: stored === 'granted' };
+  },
+
+  // Called from the "Privacy choices" button.
+  async changeConsent(granted) {
+    this.storeConsent(granted);
+    const plugin = this.getPlugin();
+    if (plugin && plugin.setConsent) {
+      try { await plugin.setConsent({ gdprConsent: !!granted }); } catch (e) { this.reportError('Consent update failed', e); }
+    }
+    logToScreen('Ad consent set to ' + (granted ? 'personalised' : 'non-personalised') + '.');
   },
 
   // --- BANNER ---
