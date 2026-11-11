@@ -39,8 +39,9 @@ function setup(overrides = {}, native = true) {
     showBanner: async () => { calls.banner.push('show'); return { bannerId: 'main', frame: { x: 0, y: 0, width: 320, height: 50 }, visible: true }; },
     ...overrides
   };
+  delete plugin.__storage;
   const context = vm.createContext({
-    window: { Capacitor: native ? { Plugins: { LevelPlay: plugin } } : undefined, alert: m => alerts.push(m) },
+    window: { Capacitor: native ? { Plugins: { LevelPlay: plugin } } : undefined, alert: m => alerts.push(m), localStorage: overrides.__storage },
     logToScreen: m => messages.push(m),
     setInterval: () => 1, clearInterval: () => {}, setTimeout, clearTimeout,
     document: { hidden: false, getElementById: () => ({ style: {} }), documentElement: { style: { setProperty: (k, v) => { cssVars[k] = v; } } } }
@@ -49,10 +50,11 @@ function setup(overrides = {}, native = true) {
   return { manager: context.manager, plugin, calls, listeners, ready, messages, alerts, cssVars };
 }
 
-test('coalesces initialization and does not claim personalized-ad consent', async () => {
+test('coalesces initialization; outside the EEA no consent signal is sent', async () => {
   const wait = deferred();
   let calls = 0;
-  const { manager } = setup({ initialize: async o => { calls++; assert.equal(o.consent.gdprConsent, false); await wait.promise; } });
+  const { manager } = setup({ initialize: async o => { calls++; assert.equal(o.consent, undefined); await wait.promise; } });
+  manager.timeZoneOverride = 'Asia/Riyadh';
   const a = manager.init(), b = manager.init();
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(calls, 1);
@@ -160,7 +162,7 @@ test('game script is syntactically valid and LevelPlay assets are packaged', () 
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   const workflow = fs.readFileSync(path.join(root, '.github/workflows/build.yml'), 'utf8');
   assert.ok(html.indexOf('<script src="ads-controller.js"></script>') < html.indexOf('// --- GAME ENGINE ---'));
-  assert.match(workflow, /cp index\.html ads-controller\.js www\//);
+  assert.match(workflow, /cp index\.html ads-controller\.js features\.js www\//);
   assert.match(workflow, /capacitor-levelplay@0\.3\.0/);
   assert.match(workflow, /unityads-adapter:5\.15\.0/);
   for (const [, script] of html.matchAll(/<script>([\s\S]*?)<\/script>/g)) new vm.Script(script);
@@ -245,4 +247,52 @@ test('a refresh with no fill keeps an already loaded banner', async () => {
   assert.equal(s.manager.bannerState, 'shown');
   await new Promise(r => setTimeout(r, 20)); await flush();
   assert.equal(s.calls.banner.filter(c => c.startsWith('create')).length, 1);
+});
+
+const same = (a, b, m) => assert.equal(JSON.stringify(a), JSON.stringify(b), m);
+function memoryStorage() {
+  const m = {};
+  return { getItem: k => (k in m ? m[k] : null), setItem: (k, v) => { m[k] = String(v); }, data: m };
+}
+
+test('EEA player is asked once; the answer is sent and remembered', async () => {
+  const storage = memoryStorage();
+  const seen = [];
+  const s = setup({ __storage: storage, initialize: async o => { seen.push(o.consent); } });
+  s.manager.timeZoneOverride = 'Europe/Berlin';
+  let asked = 0;
+  s.manager.consentPrompt = async () => { asked++; return true; };
+  await s.manager.init();
+  same(seen[0], { gdprConsent: true });
+  assert.equal(storage.data.drop2048_ads_consent, 'granted');
+  const again = await s.manager.resolveConsent();
+  assert.equal(asked, 1);
+  same(again, { gdprConsent: true });
+});
+
+test('EEA player who declines gets non-personalised ads', async () => {
+  const s = setup({ __storage: memoryStorage() });
+  s.manager.timeZoneOverride = 'Europe/London';
+  s.manager.consentPrompt = async () => false;
+  same(await s.manager.resolveConsent(), { gdprConsent: false });
+});
+
+test('EEA without a prompt defaults to no consent; region detection', async () => {
+  const s = setup({ __storage: memoryStorage() });
+  s.manager.timeZoneOverride = 'Europe/Paris';
+  same(await s.manager.resolveConsent(), { gdprConsent: false });
+  for (const [tz, eea] of [['Asia/Riyadh', false], ['Asia/Kolkata', false], ['America/New_York', false],
+    ['Atlantic/Canary', true], ['Asia/Nicosia', true], ['Europe/Dublin', true]]) {
+    s.manager.timeZoneOverride = tz;
+    assert.equal(s.manager.isGdprRegion(), eea, tz);
+  }
+});
+
+test('changing consent later updates the SDK', async () => {
+  const sent = [];
+  const storage = memoryStorage();
+  const s = setup({ __storage: storage, setConsent: async o => { sent.push(o); } });
+  await s.manager.changeConsent(false);
+  same(sent, [{ gdprConsent: false }]);
+  assert.equal(storage.data.drop2048_ads_consent, 'denied');
 });

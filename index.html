@@ -332,6 +332,107 @@
       z-index: 1000;
     }
 
+    /* POWER-UPS */
+    #powerup-bar {
+      width: 100%;
+      max-width: 360px;
+      display: flex;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .pu-btn {
+      flex: 1;
+      height: 42px;
+      border-radius: 14px;
+      border: 1px solid #e2e8f0;
+      background: #ffffff;
+      color: var(--text-dark);
+      font-size: 14px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: var(--shadow);
+      cursor: pointer;
+    }
+    .pu-btn:active { transform: scale(0.97); }
+    .pu-btn.active {
+      background: #fef3c7;
+      border-color: #f59e0b;
+      color: #92400e;
+    }
+    .pu-count {
+      min-width: 22px;
+      height: 22px;
+      padding: 0 6px;
+      border-radius: 11px;
+      background: #4f46e5;
+      color: #ffffff;
+      font-size: 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .pu-count.ad { background: #10b981; }
+    #board-frame.smash-mode {
+      outline: 3px dashed #f59e0b;
+      outline-offset: 2px;
+    }
+    #board-frame.smash-mode .tile { cursor: crosshair; }
+    .tile.smashed {
+      animation: smashOut 0.28s ease-in forwards;
+    }
+    @keyframes smashOut {
+      to { transform: scale(0.2) rotate(18deg); opacity: 0; }
+    }
+
+    /* INFO TOAST */
+    #info-toast {
+      position: fixed;
+      left: 50%;
+      top: calc(env(safe-area-inset-top, 0px) + 84px);
+      transform: translateX(-50%);
+      padding: 9px 16px;
+      border-radius: 20px;
+      background: rgba(15, 23, 42, 0.9);
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 700;
+      box-shadow: var(--shadow);
+      display: none;
+      z-index: 1001;
+      white-space: nowrap;
+    }
+
+    /* DAILY GIFT */
+    .streak-row {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+      margin: 14px 0 12px;
+    }
+    .streak-day {
+      border-radius: 10px;
+      padding: 6px 0;
+      font-size: 10px;
+      font-weight: 800;
+      background: #f1f5f9;
+      color: #94a3b8;
+    }
+    .streak-day b { display: block; font-size: 14px; }
+    .streak-day.done { background: #d1fae5; color: #047857; }
+    .streak-day.today { background: #4f46e5; color: #ffffff; }
+    .gift-items {
+      display: flex;
+      justify-content: center;
+      gap: 18px;
+      font-size: 20px;
+      font-weight: 900;
+      color: #0f172a;
+      margin-bottom: 16px;
+    }
+
     /* MODALS */
     .modal {
       position: fixed;
@@ -370,6 +471,7 @@
   </div>
 
   <div id="ad-toast">Short Ad playing in 3s...</div>
+  <div id="info-toast"></div>
 
   <!-- 1. HOME SCREEN -->
   <section class="screen active" id="home-screen">
@@ -382,6 +484,7 @@
     <div class="menu-wrap">
       <button class="btn btn-main" id="start-btn">▶ Play Game</button>
       <button class="btn btn-reward" id="home-refill-btn">📺 Watch Ad (+1 Life)</button>
+      <button class="btn btn-sub" id="home-gift-btn" style="display:none;">🎁 Daily Gift</button>
       <button class="btn btn-sub" id="rules-btn">How to Play</button>
       <button class="btn btn-sub" id="sound-btn">🔊 Sound: ON</button>
     </div>
@@ -407,6 +510,11 @@
         </div>
       </div>
     </header>
+
+    <div id="powerup-bar">
+      <button class="pu-btn" id="undo-btn">↩️ Undo <span class="pu-count" id="undo-count">1</span></button>
+      <button class="pu-btn" id="hammer-btn">🔨 Smash <span class="pu-count" id="hammer-count">1</span></button>
+    </div>
 
     <div id="dropper-strip">
       <div class="dropper-slot" data-col="0"></div>
@@ -434,7 +542,9 @@
       <p style="font-size:13px; color:#64748b; text-align:left; line-height:1.6; margin-bottom:20px;">
         1. <b>Drop & Match:</b> Direct horizontal & vertical pairs (like two 8s) merge immediately. Clusters of 3+ (L-Shape/T-Shape) merge cleanly into one higher number.<br><br>
         2. <b>3 Lives System:</b> Each lost life automatically refills in <b>15 minutes</b>.<br><br>
-        3. <b>Save Your Game:</b> When a column fills up, watch a quick ad to clear the top 2 rows and keep playing!
+        3. <b>Save Your Game:</b> When a column fills up, watch a quick ad to clear the top 2 rows and keep playing!<br><br>
+        4. <b>Power-ups:</b> ↩️ Undo takes back your last drop (1 free each game). 🔨 Smash removes any tile you tap.<br><br>
+        5. <b>Daily Gift:</b> Come back every day for a bigger gift. Day 7 also refills your lives!
       </p>
       <button class="btn btn-main" id="close-rules-btn">Got It!</button>
     </div>
@@ -448,6 +558,7 @@
         <button class="btn btn-main" id="resume-btn">Resume</button>
         <button class="btn btn-reward" id="pause-refill-btn">📺 Watch Ad (+1 Life)</button>
         <button class="btn btn-sub" id="restart-btn">Restart Game</button>
+        <button class="btn btn-sub" id="privacy-btn" style="display:none;">🔒 Privacy Choices</button>
         <button class="btn btn-sub" id="home-btn">Main Menu</button>
       </div>
     </div>
@@ -462,6 +573,9 @@
       </p>
       <div style="display:flex; flex-direction:column; gap:10px;">
         <button class="btn btn-reward" id="revive-clear-rows-btn">📺 Watch Ad (Clear 2 Rows)</button>
+        <button class="btn btn-sub" id="full-undo-btn">↩️ Undo Last Drop</button>
+        <button class="btn btn-sub" id="full-hammer-btn">🔨 Smash a Tile</button>
+        <button class="btn btn-reward" id="double-score-btn">📺 Double Score</button>
         <button class="btn btn-sub" id="restart-lose-life-btn">Use 1 Life & Restart</button>
       </div>
     </div>
@@ -481,6 +595,37 @@
     </div>
   </div>
 
+  <!-- DAILY GIFT MODAL -->
+  <div class="modal" id="daily-modal">
+    <div class="modal-card">
+      <h2 style="font-size:22px; margin-bottom:4px; color:#0f172a;">🎁 Daily Gift</h2>
+      <p style="font-size:13px; color:#64748b;" id="daily-subtitle">Day 1 of 7</p>
+      <div class="streak-row" id="streak-row"></div>
+      <div class="gift-items" id="gift-items"></div>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <button class="btn btn-reward" id="daily-ad-btn">📺 Watch Ad: Get 3×</button>
+        <button class="btn btn-sub" id="daily-free-btn">Claim</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADS CONSENT MODAL (EEA / UK / Switzerland only) -->
+  <div class="modal" id="consent-modal">
+    <div class="modal-card">
+      <h2 style="font-size:20px; margin-bottom:10px; color:#0f172a;">Your Privacy</h2>
+      <p style="font-size:13px; color:#64748b; text-align:left; line-height:1.6; margin-bottom:18px;">
+        Ads keep Drop 2048 free. With your permission, our ad partner Unity LevelPlay and its advertising partners can use data from this device (such as advertising ID and app activity) to show ads that match your interests.
+        If you say no, you will still see ads, but they will be less relevant.<br><br>
+        You can change this anytime from the pause menu → <b>Privacy Choices</b>.
+      </p>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <button class="btn btn-main" id="consent-yes-btn">Yes, personalised ads</button>
+        <button class="btn btn-sub" id="consent-no-btn">No, general ads only</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="features.js"></script>
   <script src="ads-controller.js"></script>
   <script>
     // --- LIVE ON-SCREEN DEBUG LOGGER ---
@@ -713,6 +858,7 @@
         for (let r = 0; r < ROWS; r++) {
           const slot = document.createElement('div');
           slot.className = 'cell-slot';
+          slot.dataset.r = r;
 
           const val = board[r][c];
           if (val > 0) {
@@ -747,7 +893,16 @@
       isProcessing = false;
       rollNextValue();
       renderBoard();
+      PowerUps.newGame();
       UnityAdsManager.startLoopTimer();
+    }
+
+    function showNextValue(v) {
+      nextValue = v;
+      activeBlock.innerText = nextValue;
+      const c = PALETTE[nextValue] || PALETTE[2];
+      activeBlock.style.backgroundColor = c.bg;
+      activeBlock.style.color = c.text;
     }
 
     function rollNextValue() {
@@ -783,6 +938,7 @@
         return;
       }
 
+      Features.takeSnapshot({ board, score, highScore, nextValue });
       isProcessing = true;
       Sound.drop();
 
@@ -814,6 +970,8 @@
     function showBoardFullPrompt() {
       UnityAdsManager.pauseLoopTimer();
       isProcessing = false;
+      PowerUps.cancelSmash();
+      PowerUps.refreshFullModal();
       document.getElementById('board-full-modal').classList.add('active');
     }
 
@@ -938,6 +1096,7 @@
 
     dropperSlots.forEach(slot => {
       slot.addEventListener('pointerdown', (e) => {
+        if (PowerUps.smashMode) return;
         const col = parseInt(e.currentTarget.getAttribute('data-col'), 10);
         setDropperPosition(col);
         dropIntoColumn(col);
@@ -947,6 +1106,11 @@
     columns.forEach(colEl => {
       colEl.addEventListener('pointerdown', (e) => {
         const col = parseInt(e.currentTarget.getAttribute('data-col'), 10);
+        if (PowerUps.smashMode) {
+          const slot = e.target.closest('.cell-slot');
+          if (slot) PowerUps.smashAt(parseInt(slot.dataset.r, 10), col);
+          return;
+        }
         setDropperPosition(col);
         dropIntoColumn(col);
       });
@@ -1043,10 +1207,249 @@
       showScreen('home-screen');
     };
 
-    window.addEventListener('load', () => {
+    // --- TOAST ---
+    let toastTimer = null;
+    function showToast(msg) {
+      const t = document.getElementById('info-toast');
+      t.innerText = msg;
+      t.style.display = 'block';
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => { t.style.display = 'none'; }, 2200);
+    }
+
+    // --- POWER-UPS: UNDO, SMASH, DOUBLE SCORE ---
+    const PowerUps = {
+      freeUndos: Features.FREE_UNDOS_PER_GAME,
+      smashMode: false,
+      doubled: false,
+
+      newGame() {
+        Features.clearSnapshot();
+        this.freeUndos = Features.FREE_UNDOS_PER_GAME;
+        this.doubled = false;
+        this.cancelSmash();
+        this.updateUI();
+      },
+
+      updateUI() {
+        const inv = Features.getInventory();
+        const undos = this.freeUndos + inv.undo;
+        const u = document.getElementById('undo-count');
+        const h = document.getElementById('hammer-count');
+        u.innerText = undos > 0 ? undos : '📺';
+        u.classList.toggle('ad', undos === 0);
+        h.innerText = inv.hammer > 0 ? inv.hammer : '📺';
+        h.classList.toggle('ad', inv.hammer === 0);
+        document.getElementById('hammer-btn').classList.toggle('active', this.smashMode);
+      },
+
+      closeFullModal() {
+        const m = document.getElementById('board-full-modal');
+        if (m.classList.contains('active')) {
+          m.classList.remove('active');
+          UnityAdsManager.startLoopTimer();
+        }
+      },
+
+      refreshFullModal() {
+        document.getElementById('full-undo-btn').style.display = Features.hasSnapshot() ? '' : 'none';
+        const d = document.getElementById('double-score-btn');
+        d.style.display = (!this.doubled && score > 0) ? '' : 'none';
+        d.innerText = '📺 Double Score (' + score + ' → ' + (score * 2) + ')';
+      },
+
+      // --- UNDO ---
+      undo() {
+        if (isProcessing) return;
+        if (!Features.hasSnapshot()) { showToast('Nothing to undo yet'); return; }
+        if (this.freeUndos > 0) { this.freeUndos--; this.applyUndo(); return; }
+        if (Features.useItem('undo')) { this.applyUndo(); return; }
+        UnityAdsManager.showRewarded(() => this.applyUndo());
+      },
+
+      applyUndo() {
+        const s = Features.popSnapshot();
+        if (!s) return;
+        board = s.board;
+        score = s.score;
+        highScore = s.highScore;
+        localStorage.setItem('drop2048_hi', highScore);
+        scoreText.innerText = score;
+        bestText.innerText = highScore;
+        showNextValue(s.nextValue);
+        this.closeFullModal();
+        renderBoard();
+        this.updateUI();
+        showToast('↩️ Last drop undone');
+      },
+
+      // --- SMASH ---
+      toggleSmash() {
+        if (isProcessing) return;
+        if (this.smashMode) { this.cancelSmash(); return; }
+        if (Features.getInventory().hammer > 0) { this.enterSmash(); return; }
+        UnityAdsManager.showRewarded(() => {
+          Features.addItems({ hammer: 1 });
+          this.enterSmash();
+        });
+      },
+
+      enterSmash() {
+        if (!board.flat().some(v => v > 0)) { showToast('No tiles to smash yet'); this.updateUI(); return; }
+        this.closeFullModal();
+        this.smashMode = true;
+        document.getElementById('board-frame').classList.add('smash-mode');
+        this.updateUI();
+        showToast('🔨 Tap a tile to smash it');
+      },
+
+      cancelSmash() {
+        this.smashMode = false;
+        const f = document.getElementById('board-frame');
+        if (f) f.classList.remove('smash-mode');
+        if (document.getElementById('hammer-btn')) this.updateUI();
+      },
+
+      smashAt(r, c) {
+        if (!(board[r] && board[r][c] > 0) || isProcessing) return;
+        if (!Features.useItem('hammer')) { this.cancelSmash(); return; }
+        this.cancelSmash();
+        Features.clearSnapshot();
+        isProcessing = true;
+        const tile = columns[c].children[r] && columns[c].children[r].querySelector('.tile');
+        if (tile) tile.classList.add('smashed');
+        Sound.drop();
+        setTimeout(() => {
+          Features.smashTile(board, r, c);
+          renderBoard();
+          setTimeout(() => {
+            resolveClusters(Math.min(ROWS - 1, r), c, () => { isProcessing = false; this.updateUI(); });
+          }, 300);
+        }, 280);
+      },
+
+      // --- DOUBLE SCORE ---
+      doubleScore() {
+        if (this.doubled || score <= 0) return;
+        UnityAdsManager.showRewarded(() => {
+          this.doubled = true;
+          score *= 2;
+          scoreText.innerText = score;
+          if (score > highScore) {
+            highScore = score;
+            localStorage.setItem('drop2048_hi', highScore);
+            bestText.innerText = highScore;
+          }
+          this.refreshFullModal();
+          showToast('✖️2 Score doubled: ' + score);
+        });
+      }
+    };
+
+    document.getElementById('undo-btn').onclick = () => PowerUps.undo();
+    document.getElementById('hammer-btn').onclick = () => PowerUps.toggleSmash();
+    document.getElementById('full-undo-btn').onclick = () => PowerUps.undo();
+    document.getElementById('full-hammer-btn').onclick = () => PowerUps.toggleSmash();
+    document.getElementById('double-score-btn').onclick = () => PowerUps.doubleScore();
+
+    // --- DAILY GIFT & STREAK ---
+    const DailyGift = {
+      itemsText(g) {
+        const parts = [];
+        if (g.hammer) parts.push('🔨 ×' + g.hammer);
+        if (g.undo) parts.push('↩️ ×' + g.undo);
+        if (g.fullLives) parts.push('❤️ Full');
+        return parts;
+      },
+
+      updateHomeButton() {
+        document.getElementById('home-gift-btn').style.display = Features.todaysStreakDay() ? '' : 'none';
+      },
+
+      showIfDue() {
+        const day = Features.todaysStreakDay();
+        this.updateHomeButton();
+        if (!day) return;
+        const gift = Features.giftForDay(day);
+        document.getElementById('daily-subtitle').innerText =
+          day === 1 ? 'Come back every day for bigger gifts!' : '🔥 ' + day + '-day streak! Keep it going.';
+        const row = document.getElementById('streak-row');
+        row.innerHTML = '';
+        for (let d = 1; d <= Features.STREAK_LENGTH; d++) {
+          const el = document.createElement('div');
+          el.className = 'streak-day' + (d < day ? ' done' : d === day ? ' today' : '');
+          el.innerHTML = 'Day<b>' + (d < day ? '✓' : d === Features.STREAK_LENGTH ? '🎁' : d) + '</b>';
+          row.appendChild(el);
+        }
+        const items = document.getElementById('gift-items');
+        items.innerHTML = '';
+        for (const t of this.itemsText(gift)) {
+          const span = document.createElement('span');
+          span.innerText = t;
+          items.appendChild(span);
+        }
+        const tripled = { hammer: gift.hammer * Features.AD_GIFT_MULTIPLIER, undo: gift.undo * Features.AD_GIFT_MULTIPLIER, fullLives: gift.fullLives };
+        document.getElementById('daily-ad-btn').innerText = '📺 Watch Ad: Get ' + this.itemsText(tripled).join('  ');
+        document.getElementById('daily-modal').classList.add('active');
+      },
+
+      claim(withAd) {
+        const g = Features.claimDaily(withAd);
+        document.getElementById('daily-modal').classList.remove('active');
+        this.updateHomeButton();
+        if (!g) return;
+        if (g.fullLives) {
+          LifeManager.lives = MAX_LIVES;
+          LifeManager.nextRefillTime = null;
+          LifeManager.save();
+          LifeManager.updateUI();
+        }
+        PowerUps.updateUI();
+        showToast('🎁 Got ' + this.itemsText(g).join('  '));
+      }
+    };
+
+    document.getElementById('daily-free-btn').onclick = () => DailyGift.claim(false);
+    document.getElementById('daily-ad-btn').onclick = () => {
+      UnityAdsManager.showRewarded(() => DailyGift.claim(true));
+    };
+    document.getElementById('home-gift-btn').onclick = () => DailyGift.showIfDue();
+
+    // --- ADS CONSENT (EEA / UK / Switzerland) ---
+    function askConsent() {
+      return new Promise(resolve => {
+        const m = document.getElementById('consent-modal');
+        const done = (granted) => { m.classList.remove('active'); resolve(granted); };
+        document.getElementById('consent-yes-btn').onclick = () => done(true);
+        document.getElementById('consent-no-btn').onclick = () => done(false);
+        m.classList.add('active');
+      });
+    }
+    // First-time EEA answer, asked by the ad SDK setup; the daily gift follows it.
+    UnityAdsManager.consentPrompt = async () => {
+      const granted = await askConsent();
+      setTimeout(() => DailyGift.showIfDue(), 300);
+      return granted;
+    };
+    if (UnityAdsManager.isGdprRegion()) {
+      document.getElementById('privacy-btn').style.display = '';
+    }
+    document.getElementById('privacy-btn').onclick = async () => {
+      document.getElementById('pause-modal').classList.remove('active');
+      const granted = await askConsent();
+      await UnityAdsManager.changeConsent(granted);
+      document.getElementById('pause-modal').classList.add('active');
+    };
+
+    window.addEventListener('load', async () => {
       logToScreen('App window loaded');
       LifeManager.init();
-      UnityAdsManager.init();
+      PowerUps.updateUI();
+      // EEA players answer the consent question first (inside init); the daily gift follows it.
+      const needsConsent = UnityAdsManager.isGdprRegion() && !UnityAdsManager.getStoredConsent()
+        && !!UnityAdsManager.getPlugin();
+      if (!needsConsent) DailyGift.showIfDue();
+      await UnityAdsManager.init();
     });
   </script>
 </body>
