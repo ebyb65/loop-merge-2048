@@ -365,7 +365,7 @@
 <body>
 
   <!-- ON-SCREEN DEBUG CONSOLE -->
-  <div id="debug-box" style="position:fixed; bottom:0; left:0; width:100%; max-height:110px; background:rgba(0,0,0,0.9); color:#22c55e; font-family:monospace; font-size:10px; padding:5px 8px; overflow-y:auto; z-index:999999; pointer-events:auto; word-break:break-all; border-top:2px solid #6366f1;">
+  <div id="debug-box" style="display:none; position:fixed; bottom:0; left:0; width:100%; max-height:110px; background:rgba(0,0,0,0.9); color:#22c55e; font-family:monospace; font-size:10px; padding:5px 8px; overflow-y:auto; z-index:999999; pointer-events:auto; word-break:break-all; border-top:2px solid #6366f1;">
     <b>[DEBUG CONSOLE READY]</b>
   </div>
 
@@ -483,10 +483,13 @@
 
   <script src="ads-controller.js"></script>
   <script>
-    // --- LIVE ON-SCREEN DEBUG LOGGER ---
+    // --- DEBUG LOGGER ---
+    // Players must never see the on-screen box. Set true only for a local debug build.
+    const SHOW_DEBUG_BOX = false;
     function logToScreen(msg) {
       const box = document.getElementById('debug-box');
-      if (box) {
+      if (SHOW_DEBUG_BOX && box) {
+        box.style.display = 'block';
         box.appendChild(document.createElement('br'));
         box.appendChild(document.createTextNode('• ' + msg));
         box.scrollTop = box.scrollHeight;
