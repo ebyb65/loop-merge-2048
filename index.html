@@ -468,8 +468,8 @@
   <div class="modal" id="board-full-modal">
     <div class="modal-card">
       <h2 style="font-size:22px; color:#ef4444; margin-bottom:8px;">No More Moves!</h2>
-      <p style="font-size:13px; color:#64748b; margin-bottom:18px;">
-        Column is full! Watch a short ad to clear top 2 rows and keep your score, or use 1 life to restart.
+      <p id="board-full-text" style="font-size:13px; color:#64748b; margin-bottom:18px;">
+        The board is full! Watch a short ad to clear the top 2 rows and keep your score, or use 1 life to restart.
       </p>
       <div style="display:flex; flex-direction:column; gap:10px;">
         <button class="btn btn-reward" id="revive-clear-rows-btn">📺 Watch Ad (Clear 2 Rows)</button>
@@ -845,6 +845,12 @@
     function showBoardFullPrompt() {
       UnityAdsManager.pauseLoopTimer();
       isProcessing = false;
+      // With the last life, the button ends the game (Out of Lives), so say so.
+      const lastLife = LifeManager.lives <= 1;
+      document.getElementById('board-full-text').innerText = lastLife
+        ? 'The board is full! Watch a short ad to clear the top 2 rows and keep your score, or end this game (uses your last life).'
+        : 'The board is full! Watch a short ad to clear the top 2 rows and keep your score, or use 1 life to restart.';
+      document.getElementById('restart-lose-life-btn').innerText = lastLife ? 'End Game (Last Life)' : 'Use 1 Life & Restart';
       document.getElementById('board-full-modal').classList.add('active');
     }
 
