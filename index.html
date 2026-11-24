@@ -294,6 +294,17 @@
       100% { transform: translateY(0) scale(1, 1); opacity: 1; }
     }
 
+    .col-track.col-full-shake {
+      animation: colFullShake 0.36s ease;
+    }
+    @keyframes colFullShake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-5px); }
+      40% { transform: translateX(5px); }
+      60% { transform: translateX(-3px); }
+      80% { transform: translateX(3px); }
+    }
+
     .tile.merged-target {
       animation: organicMerge 0.52s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
       z-index: 10;
@@ -769,6 +780,7 @@
       if (isProcessing) return;
 
       if (LifeManager.lives <= 0) {
+        UnityAdsManager.pauseLoopTimer();
         document.getElementById('over-modal').classList.add('active');
         return;
       }
@@ -782,7 +794,12 @@
       }
 
       if (targetRow === -1) {
-        showBoardFullPrompt();
+        // Only a completely full board ends the game; a single full column just shakes.
+        if (board[0].some(v => v === 0)) {
+          signalColumnFull(col);
+        } else {
+          showBoardFullPrompt();
+        }
         return;
       }
 
@@ -812,6 +829,17 @@
       if (isFull) {
         showBoardFullPrompt();
       }
+    }
+
+    function signalColumnFull(col) {
+      const track = columns[col];
+      if (track) {
+        track.classList.remove('col-full-shake');
+        void track.offsetWidth;
+        track.classList.add('col-full-shake');
+        setTimeout(() => track.classList.remove('col-full-shake'), 400);
+      }
+      if (navigator.vibrate) navigator.vibrate(40);
     }
 
     function showBoardFullPrompt() {
@@ -1019,10 +1047,13 @@
     document.getElementById('restart-lose-life-btn').onclick = () => {
       document.getElementById('board-full-modal').classList.remove('active');
       const hasLife = LifeManager.consumeLife();
-      if (hasLife) {
+      if (hasLife && LifeManager.lives > 0) {
         initGame();
         UnityAdsManager.onGameBreak('new game after full board');
       } else {
+        // That was the last life: no dead board, go to the menu with the Out of Lives card.
+        UnityAdsManager.pauseLoopTimer();
+        showScreen('home-screen');
         document.getElementById('over-modal').classList.add('active');
       }
     };
@@ -1042,6 +1073,7 @@
     document.getElementById('reward-revive-btn').onclick = triggerAdRefill;
 
     document.getElementById('over-home-btn').onclick = () => {
+      UnityAdsManager.pauseLoopTimer();
       document.getElementById('over-modal').classList.remove('active');
       showScreen('home-screen');
     };
