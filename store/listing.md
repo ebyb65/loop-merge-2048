@@ -56,6 +56,7 @@ Notes:
 - Keyword spread: 2048 ×3, merge ×4, number ×3, block ×4, puzzle ×1, drop ×4. Natural, not stuffed.
 
 ## Screenshots
+Publishing steps for the CEO: `store/publish-guide.md`.
 See `store/screenshots.md` (storyboard) and `store/screenshots/` (1080x1920 PNGs from the web build, made by `store/make_screenshots.cjs`).
 
 ## Feature graphic idea (1024x500)
