@@ -18,7 +18,7 @@ Order matters: Play shows the first 2-3 in search, so the first three carry the 
 
 Honesty notes:
 - Boards are set up states made with the real game code and rendering (no painted tiles). Score numbers are illustrative of reachable play, not anyone's real record.
-- The frames hide the on-screen debug console and the Lives card, because the listing is meant to go live with 1.2.0, which removes both (backlog d-debug-off, d-nolives). **If 1.2.0 ships without those changes, re-make with `HIDE_FOR_1_2 = false` before publishing**, so the screenshots match the app.
+- Re-made 24 Nov with `HIDE_FOR_1_2 = false`: the frames show the Lives card, because the CEO decided to keep the lives system. The debug console is hidden by the game itself since 1.2.0.
 - Above 2048 the game has no tile colour yet (falls back to the "2" blue). Not shown; small item for Arjun (d-tile-colors) if we advertise "keep going".
 
 Later: Arabic and Hindi caption versions (same frames, translated captions), and a 7th shot of a new feature (e.g. daily challenge, d-retention) once it exists.

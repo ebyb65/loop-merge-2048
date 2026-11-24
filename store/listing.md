@@ -6,8 +6,9 @@ Package: com.games.drop2048 · Arabic and Hindi versions follow once English is 
 ## Read this first: ship the listing with a cleanup update, not alone
 The live build (1.1.0, from `main`) has two things a new listing would send players straight into:
 1. **An on-screen debug console** (green text on black, bottom of the screen, `#debug-box` in index.html) that covers the bottom row of the board. Seen in a headless run of `main` and `develop`.
-2. **A 3-lives system with a 15-minute refill** that stops play at 0 lives. This breaks the studio rule "no energy or lives that block playing".
-Recommendation: publish this listing together with a 1.2.0 that removes both (backlog items d-debug-off, d-nolives). The copy below already describes the game *without* lives. If the CEO wants the listing live sooner, delete the "No lives to wait for" line first so the listing stays truthful.
+2. **A 3-lives system with a 15-minute refill** that stops play at 0 lives.
+Recommendation: publish this listing together with 1.2.0, which hides the debug console (d-debug-off, done 23 Nov).
+CEO decision 24 Nov 2026: the lives system **stays as it is** (3 lives, 15-minute refill). The copy below makes no claim about lives or unlimited play, and the screenshots show the Lives card.
 CEO decision 23 Nov 2026: the timed mid-game interstitial (every 135 s of play, with a 3 s "Short Ad" warning) **stays**. Drop 2048 is endless with no levels, so there is no natural break between levels. The copy makes no claim about when ads appear.
 
 ## What competitors do (research 23 Nov 2026)
@@ -15,7 +16,7 @@ Looked at Drop the Number: Puzzle Merge, X2 Blocks: Number Block Puzzle, Drop Th
 - Titles follow one pattern: Drop / Number + Merge / Block + Puzzle, often with 2048. Our current title already covers drop, 2048, number, block and merge.
 - Selling points everyone uses: offline play, no time limit, leaderboards, "brain training", boosters.
 - **Top player complaints** (about 20 of ~32 visible reviews): too many ads, ads at start and at every milestone, unskippable long ads; then freezes after ads (about 6) and lost progress (about 4).
-- So our angle: **the calm, fair one**. No timer, nothing blocks you from playing, rewarded videos always optional. That is a promise we can keep and competitors can't easily copy.
+- So our angle: **the calm, fair one**. No timer, rewarded videos always optional. That is a promise we can keep and competitors can't easily copy.
 Rule check: no competitor names, icons or look reused; our colours (indigo + flat tiles on light grid) are our own.
 
 ## Title (max 30)
@@ -41,7 +42,6 @@ HOW IT WORKS
 
 WHY PLAYERS LIKE IT
 • No timer: take as long as you want over every drop
-• No lives to wait for: play as many games as you like
 • Clean, minimal look with bright, easy-to-read tiles
 • Plays offline
 • Short games that fit a coffee break, with your best score saved on your phone
@@ -51,7 +51,7 @@ Can you reach 2048, and then go past it?
 Made by Yebee Games, a small independent studio. Ideas or problems? Write to us from the Play Store page; we read every message.
 ```
 Notes:
-- The line "No lives to wait for" is only true after 1.2.0 (see top).
+- Removed 24 Nov: the line "No lives to wait for" (the lives system stays, CEO decision).
 - Avoided: "best", "#1", "free" claims, emoji spam, keyword stuffing, mentions of other games (Play metadata policy).
 - Keyword spread: 2048 ×3, merge ×4, number ×3, block ×4, puzzle ×1, drop ×4. Natural, not stuffed.
 
