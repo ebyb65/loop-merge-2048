@@ -9,7 +9,7 @@ Drop-merge games show the next block so players can plan a move ahead. Drop 2048
 - A small, non-tappable chip centred between the header and the dropper strip: the word **NEXT** (same style as the `Score`/`Best` small caps labels) and a mini tile (about 60% of a board tile, same colours from `PALETTE`).
 - The block in hand stays where it is today (`#active-block` in the dropper strip).
 - When a block is dropped, the Next tile slides/fades into the hand slot (150-200 ms) and a new Next value appears.
-- At 360x740 there is room: the gap between the header and the board is about 130 px today (checked in screenshots, 24 Nov).
+- At 360x740 there is room: the empty gap between the header and the block in hand is about 100 px today (checked in screenshots, 24 Nov).
 
 ## Rules
 1. Keep a two-value queue: `currentValue` (in hand) and `nextValue` (preview).
