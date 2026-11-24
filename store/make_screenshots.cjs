@@ -2,11 +2,12 @@
 // Run from the repo root:  node store/make_screenshots.cjs
 // Output: store/screenshots/raw/*.png (plain game, 1080x1920) and
 //         store/screenshots/*.png (captioned store frames, 1080x1920).
-// HIDE_FOR_1_2 hides the debug console and the lives card, which 1.2.0 removes
-// (backlog d-debug-off, d-nolives). Set it to false once 1.2.0 is merged.
+// HIDE_FOR_1_2 hides the debug console and the lives card. Keep it false: the game
+// hides the debug console itself since 1.2.0, and the CEO decided on 24 Nov 2026
+// to keep the lives system, so screenshots must show the Lives card.
 const { chromium } = require('playwright');
 const path = require('path'), fs = require('fs');
-const HIDE_FOR_1_2 = true;
+const HIDE_FOR_1_2 = false;
 const WAIT = +(process.env.WAIT || 760); // ms after a drop: merges start at 480 ms
 const root = path.resolve(__dirname, '..');
 const outRaw = path.join(__dirname, 'screenshots', 'raw');
