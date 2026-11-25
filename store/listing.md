@@ -66,3 +66,10 @@ Indigo-to-violet gradient (#4f46e5 → #7c3aed). Left: "DROP 2048" in the game's
 - Icon: no change proposed this round.
 - Arabic and Hindi: after English approval (Zara).
 - Store listing experiment (title A/B) once we have more than a handful of daily visitors; with ~1 DAU today the test would never reach a result.
+
+## Next refresh (after 1.2.0 is live): candidate lines
+Not part of the approved 1.2.0 listing. Goes to the CEO with the next listing refresh (together with the 3 foldable screenshots due April 2027).
+- Fairness line (d-fair-line, Zara 25 Nov), for the full description under "Calm, fair play":
+  "Every next block is picked at random. The game never tilts the odds against you."
+  Checked 25 Nov on develop: `rollNextValue()` in index.html picks evenly from 2-64, capped only by the highest tile on the board; no score, ad or purchase input. This is a promise: any change to the block generator must keep it true (Arjun/Lena).
+  Why: players of a big competitor publicly accuse it of tuning pieces to ad value (Nora, docs/research/2026-11-25-block-blast.md). We say what we do, without naming anyone.
