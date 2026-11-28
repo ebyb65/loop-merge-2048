@@ -1,0 +1,15 @@
+{
+  "name": "yebee-play-age-signals",
+  "version": "0.1.0",
+  "description": "Yebee Games: tiny Capacitor plugin that asks Google Play for the user's age signal (Play Age Signals API) on launch.",
+  "private": true,
+  "license": "UNLICENSED",
+  "files": ["android/src/main/", "android/build.gradle"],
+  "keywords": ["capacitor", "capacitor-plugin"],
+  "capacitor": {
+    "android": { "src": "android" }
+  },
+  "peerDependencies": {
+    "@capacitor/core": ">=8.0.0"
+  }
+}

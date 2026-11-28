@@ -12,7 +12,7 @@ function deferred() {
   return { promise, resolve };
 }
 
-function setup(overrides = {}, native = true) {
+function setup(overrides = {}, native = true, extraPlugins = {}) {
   const calls = { init: [], load: [], show: [] };
   const listeners = {};
   const ready = {};
@@ -40,7 +40,7 @@ function setup(overrides = {}, native = true) {
     ...overrides
   };
   const context = vm.createContext({
-    window: { Capacitor: native ? { Plugins: { LevelPlay: plugin } } : undefined, alert: m => alerts.push(m) },
+    window: { Capacitor: native ? { Plugins: { LevelPlay: plugin, ...extraPlugins } } : undefined, alert: m => alerts.push(m) },
     logToScreen: m => messages.push(m),
     setInterval: () => 1, clearInterval: () => {}, setTimeout, clearTimeout,
     document: { hidden: false, getElementById: () => ({ style: {} }), documentElement: { style: { setProperty: (k, v) => { cssVars[k] = v; } } } }
@@ -245,4 +245,72 @@ test('a refresh with no fill keeps an already loaded banner', async () => {
   assert.equal(s.manager.bannerState, 'shown');
   await new Promise(r => setTimeout(r, 20)); await flush();
   assert.equal(s.calls.banner.filter(c => c.startsWith('create')).length, 1);
+});
+
+// --- age-api: Play Age Signals before LevelPlay starts (California AB 1043 / Brazil, Jan 2027) ---
+function setupAge(ageCheck) {
+  const asked = [];
+  const extra = ageCheck ? { PlayAgeSignals: { check: async () => { asked.push(1); return ageCheck(asked.length); } } } : {};
+  const env = setup({}, true, extra);
+  env.manager.ageTimeoutMs = 50;
+  env.manager.ageRetryMs = 1;
+  return { ...env, asked };
+}
+
+const ageCases = [
+  ['under 13', { ok: true, ageLower: 0, ageUpper: 12 }, 'minor'],
+  ['13-15', { ok: true, ageLower: 13, ageUpper: 15 }, 'minor'],
+  ['16-17', { ok: true, ageLower: 16, ageUpper: 17 }, 'minor'],
+  ['18 or over', { ok: true, ageLower: 18, ageUpper: null }, 'adult'],
+  ['open range from a child age', { ok: true, ageLower: 13, ageUpper: null }, 'minor'],
+  ['no age from Play', { ok: true, ageLower: null, ageUpper: null }, 'none'],
+  ['Play error', { ok: false, error: 'AgeSignalsException: -1' }, 'none']
+];
+for (const [name, answer, group] of ageCases) {
+  test('age signal ' + name + ' -> ' + group + ' ads flags', async () => {
+    const { manager, calls } = setupAge(() => answer);
+    assert.equal(await manager.init(), true);
+    assert.equal(manager.ageGroup, group);
+    assert.equal(calls.init.length, 1);
+    const consent = calls.init[0].consent;
+    assert.equal(consent.gdprConsent, false);
+    if (group === 'minor') { assert.equal(consent.coppa, true); assert.equal(consent.ccpaDoNotSell, true); }
+    else { assert.equal(consent.coppa, undefined); assert.equal(consent.ccpaDoNotSell, undefined); }
+  });
+}
+
+test('no age plugin: LevelPlay starts as today (no extra flags, no message)', async () => {
+  const { manager, calls, messages } = setupAge(null);
+  assert.equal(await manager.init(), true);
+  assert.deepEqual(Object.keys(calls.init[0].consent), ['gdprConsent']);
+  assert.ok(!messages.some(m => /Age signal/.test(m)));
+});
+
+test('a Play error is retried once; the retry answer is used', async () => {
+  const { manager, calls, asked } = setupAge(n => (n === 1 ? { ok: false, error: 'transient' } : { ok: true, ageLower: 13, ageUpper: 15 }));
+  assert.equal(await manager.init(), true);
+  assert.equal(asked.length, 2);
+  assert.equal(calls.init[0].consent.coppa, true);
+});
+
+test('a hanging age check times out and ads still start (no retry after a timeout)', async () => {
+  const { manager, calls, asked, messages } = setupAge(() => new Promise(() => {}));
+  assert.equal(await manager.init(), true);
+  assert.equal(asked.length, 1);
+  assert.equal(calls.init.length, 1);
+  assert.equal(calls.init[0].consent.coppa, undefined);
+  assert.ok(messages.some(m => m === 'Age signal unavailable: timeout'));
+});
+
+test('a throwing age plugin never blocks ads', async () => {
+  const { manager, calls } = setupAge(() => { throw new Error('boom'); });
+  assert.equal(await manager.init(), true);
+  assert.equal(calls.init.length, 1);
+  assert.equal(manager.ageGroup, 'none');
+});
+
+test('no age check outside the native app', async () => {
+  const { manager } = setup({}, false);
+  assert.equal(manager.getAgePlugin(), null);
+  assert.equal((await manager.checkAge()).group, 'none');
 });

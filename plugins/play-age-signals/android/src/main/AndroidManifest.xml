@@ -1,0 +1,3 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- No permissions: the age signal comes from the Play Store app on the device. -->
+</manifest>

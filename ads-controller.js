@@ -31,6 +31,57 @@ const UnityAdsManager = {
     return capacitor.Plugins && capacitor.Plugins.LevelPlay;
   },
 
+  // --- Play Age Signals (California AB 1043 / Brazil, Jan 2027) ---
+  // On every launch, before ads start, ask Google Play for the player's age signal
+  // (plugins/play-age-signals). An age range under 18 means child-directed, non-personalized ads
+  // (LevelPlay COPPA + "do not sell"). No signal (most regions), an error or a timeout: today's
+  // behaviour. The same ads show either way; the age itself is not stored or sent anywhere.
+  ageTimeoutMs: 4000,
+  ageRetryMs: 1500,
+  ageGroup: 'none', // minor | adult | none
+  ageResult: null,
+
+  getAgePlugin() {
+    const capacitor = window.Capacitor;
+    if (!capacitor || (capacitor.isNativePlatform && !capacitor.isNativePlatform())) return null;
+    return (capacitor.Plugins && capacitor.Plugins.PlayAgeSignals) || null;
+  },
+
+  // Play 0.0.6 answers with an age range: ageUpper null with an ageLower means 18 or over;
+  // both null means Play has no age for this user.
+  classifyAge(r) {
+    if (!r || !r.ok) return 'none';
+    if (typeof r.ageUpper === 'number' && r.ageUpper < 18) return 'minor';
+    if (typeof r.ageLower === 'number' && r.ageLower < 18 && typeof r.ageUpper !== 'number') return 'minor'; // open range from a child age: play safe
+    if (typeof r.ageLower === 'number') return 'adult';
+    return 'none';
+  },
+
+  async askAgeOnce(agePlugin) {
+    let timer;
+    try {
+      return await Promise.race([
+        agePlugin.check(),
+        new Promise(r => { timer = setTimeout(() => r({ ok: false, error: 'timeout' }), this.ageTimeoutMs); })
+      ]);
+    } catch (error) {
+      return { ok: false, error: error && error.message ? error.message : String(error) };
+    } finally {
+      clearTimeout(timer);
+    }
+  },
+
+  async checkAge() {
+    const agePlugin = this.getAgePlugin();
+    if (!agePlugin) return { group: 'none', result: { ok: false, error: 'no plugin' } };
+    let r = await this.askAgeOnce(agePlugin);
+    if (!r || (!r.ok && r.error !== 'timeout')) { // transient Play errors: one retry
+      await new Promise(res => setTimeout(res, this.ageRetryMs));
+      r = await this.askAgeOnce(agePlugin);
+    }
+    return { group: this.classifyAge(r), result: r };
+  },
+
   reportError(context, error) {
     const message = error && error.message ? error.message : String(error);
     logToScreen(context + ': ' + message);
@@ -56,7 +107,13 @@ const UnityAdsManager = {
           this.listenersRegistered = true;
         }
         // Until a consent manager exists, do not signal consent to personalized ads.
-        await plugin.initialize({ appKey: this.appKey, consent: { gdprConsent: false } });
+        const consent = { gdprConsent: false };
+        const age = await this.checkAge();
+        this.ageGroup = age.group;
+        this.ageResult = age.result;
+        if (age.group === 'minor') { consent.coppa = true; consent.ccpaDoNotSell = true; }
+        if (age.result && !age.result.ok && age.result.error !== 'no plugin') logToScreen('Age signal unavailable: ' + age.result.error);
+        await plugin.initialize({ appKey: this.appKey, consent });
         this.initialized = true;
         logToScreen('LevelPlay initialized. Loading ads...');
         void this.preloadAds();

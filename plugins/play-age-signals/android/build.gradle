@@ -1,0 +1,48 @@
+ext {
+    // Play Age Signals API (beta). 0.0.6 is the version Google's docs list as current (Nov 2026).
+    playAgeSignalsVersion = project.hasProperty('playAgeSignalsVersion') ? rootProject.ext.playAgeSignalsVersion : '0.0.6'
+}
+
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.13.0'
+    }
+}
+
+apply plugin: 'com.android.library'
+
+android {
+    namespace = "com.yebee.agesignals"
+    compileSdk = project.hasProperty('compileSdkVersion') ? rootProject.ext.compileSdkVersion : 36
+    defaultConfig {
+        minSdkVersion project.hasProperty('minSdkVersion') ? rootProject.ext.minSdkVersion : 24
+        targetSdkVersion project.hasProperty('targetSdkVersion') ? rootProject.ext.targetSdkVersion : 36
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+    lintOptions {
+        abortOnError = false
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_21
+        targetCompatibility JavaVersion.VERSION_21
+    }
+}
+
+repositories {
+    google()
+    mavenCentral()
+}
+
+dependencies {
+    implementation project(':capacitor-android')
+    implementation "com.google.android.play:age-signals:$playAgeSignalsVersion"
+    implementation "com.google.android.gms:play-services-tasks:18.2.0"
+}

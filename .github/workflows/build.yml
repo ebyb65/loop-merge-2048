@@ -37,6 +37,7 @@ jobs:
           cp index.html ads-controller.js www/
           npm init -y
           npm install @capacitor/core@8 @capacitor/cli@8 @capacitor/android@8 capacitor-levelplay@0.3.0
+          npm install ./plugins/play-age-signals
           npx cap init "Drop 2048" "com.games.drop2048" --web-dir "www"
           npx cap add android
           python3 - <<'PYCODE'
@@ -150,17 +151,19 @@ jobs:
           npm init -y
           npm install @capacitor/core@8 @capacitor/cli@8 @capacitor/android@8
           npm install capacitor-levelplay@0.3.0
+          # age-api: Play Age Signals plugin (asked on launch before LevelPlay starts)
+          npm install ./plugins/play-age-signals
           npx cap init "Drop 2048" "com.games.drop2048" --web-dir "www"
           npx cap add android
 
-      - name: Bump Version Code to 14 & Version Name to 1.2.0
+      - name: Bump Version Code to 15 & Version Name to 1.2.1
         run: |
           python3 - << 'EOF'
           gradle_path = "android/app/build.gradle"
           with open(gradle_path, 'r') as f:
               content = f.read()
-          content = content.replace("versionCode 1", "versionCode 14")
-          content = content.replace('versionName "1.0"', 'versionName "1.2.0"')
+          content = content.replace("versionCode 1", "versionCode 15")
+          content = content.replace('versionName "1.0"', 'versionName "1.2.1"')
           with open(gradle_path, 'w') as f:
               f.write(content)
           EOF
@@ -240,6 +243,12 @@ jobs:
           cp -r www/* android/app/src/main/assets/public/
           npx cap copy android
           npx cap sync android
+          # age-api: the Play Age Signals plugin must be registered, or the game silently skips the age check
+          if grep -q "com.yebee.agesignals.PlayAgeSignalsPlugin" android/app/src/main/assets/capacitor.plugins.json; then
+            echo "PASS: PlayAgeSignals plugin registered"
+          else
+            echo "FAIL: PlayAgeSignals plugin missing from capacitor.plugins.json"; cat android/app/src/main/assets/capacitor.plugins.json; exit 1
+          fi
 
       - name: Accept SDK Licenses & Link Path
         run: |
@@ -281,6 +290,8 @@ jobs:
           echo "manifest: $MAN"
           grep -n "QUERY_ALL_PACKAGES" "$MAN" && echo "WARNING: QUERY_ALL_PACKAGES present" || echo "QUERY_ALL_PACKAGES: not present"
           awk '/<queries>/,/<\/queries>/' "$MAN" || true
+          echo "== permissions in merged release manifest =="
+          grep -o 'uses-permission[^>]*android:name="[^"]*"' "$MAN" | sort -u || true
           echo "== Code that calls installed-app APIs (by class) =="
           DEXDUMP=$(ls $ANDROID_HOME/build-tools/*/dexdump | sort -V | tail -1)
           for dex in aab-check/base/dex/*.dex; do
